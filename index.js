@@ -196,21 +196,21 @@ firstElementWithClass('file_chooser')?.addEventListener('click', async event => 
 
         // scroll to all pages, that have not been rendered yet, to render them
         const pdfViewer = iFrame.contentWindow.PDFViewerApplication.pdfViewer;
-        if ( ! pdfViewer.pageViewsReady ){
-          for ( let pageNumber = 1; pageNumber <= pdfViewer.pagesCount; pageNumber++){
-            if ( ! pdfDoc.pagesRendered.has( pageNumber ) ){
-              if ( config.log ) console.log( "scrollPageIntoView", pageNumber );
-              pdfViewer.scrollPageIntoView({ pageNumber });
-              // await annotationeditorlayerrendered event
-              if ( renderPromise && renderPromise[ pageNumber - 1 ] ){
-                await renderPromise[ pageNumber - 1 ]; // Array index starts with 0, page numbers start with 1
-              } else {
-                if ( config.log ) console.log( "######### Timeout fired #########" );
-                await new Promise(resolve => setTimeout(resolve, 33)); // Timeout if needed
-              } 
-            }
+
+        for ( let pageNumber = 1; pageNumber <= pdfViewer.pagesCount; pageNumber++){
+          if ( ! pdfDoc.pagesRendered.has( pageNumber ) ){
+            if ( config.log ) console.log( "scrollPageIntoView", pageNumber );
+            pdfViewer.scrollPageIntoView({ pageNumber });
+            // await annotationeditorlayerrendered event
+            if ( renderPromise && renderPromise[ pageNumber - 1 ] ){
+              await renderPromise[ pageNumber - 1 ]; // Array index starts with 0, page numbers start with 1
+            } else {
+              if ( config.log ) console.log( "######### Timeout fired #########" );
+              await new Promise(resolve => setTimeout(resolve, 33)); // Timeout if needed
+            } 
           }
         }
+
 
         if ( config.log ) console.log( "pageViewsReady", iFrame.contentWindow.PDFViewerApplication.pdfViewer.pageViewsReady );
 
