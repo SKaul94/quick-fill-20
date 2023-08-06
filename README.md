@@ -1,8 +1,8 @@
 # QuickFill20 
-* fills PDF forms quickly using Mozilla [PDF.js](https://github.com/mozilla/pdf.js)
-* rule based automation of filling values into the PDF form fields
-* rule editor for adding and changing rules
-* opens even encoded PDFs thanks to Mozilla [PDF.js](https://github.com/mozilla/pdf.js). No need for [qpdf](https://github.com/qpdf/qpdf)  
+* fills PDF forms quickly using Mozilla [PDF.js](https://github.com/mozilla/pdf.js).
+* rule based automation of filling values into the PDF form fields.
+* rule editor for adding and changing rules.
+* opens even encoded PDFs thanks to Mozilla [PDF.js](https://github.com/mozilla/pdf.js). No need for [qpdf](https://github.com/qpdf/qpdf).  
 
 ## Build newest pdfjs-dist yourself via pdf.js
 
