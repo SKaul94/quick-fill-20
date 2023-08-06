@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <title>QuickFill 2.0</title>
+  <!--
+    * @module index.html
+    * @summary main HTML document
+    * @version 2.0.0
+    * @author Sebastian Kaul
+    * @copyright (C) 2021, 2022, 2023 All Rights reserved by author
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <link rel="stylesheet" href="lib/styles.css">
+  <link rel="stylesheet" href="node_modules/simple-keyboard/build/css/index.css">
+  <link rel="shortcut icon" href="favicon.ico">
+  
+  <link rel="prefetch" href="web/viewer.css" as="style" />
+  <link rel="prefetch" href="web/viewer.js" as="script" />
+  <link rel="prefetch" href="build/pdf.js" as="script" />
+
+  <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+<noscript>
+  <h1>JavaScript ist ausgeschaltet. Bitte einschalten!</h1>
+</noscript>
+<div id="fixed-right-buttons">
+  <button id="profile_button" class="app help">Profil</button>
+  <button id="app_button" class="profile help hide">&rarr; zurück zur Hauptseite</button>
+  <svg id="help_button" class="clickable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+    <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+  </svg>
+</div>
+<h1 id="title" class="shadow-font">QuickFill</h1>
+<div class="app">
+  <span id="select-flag" class="hide"> <!-- Flag and Language Chooser. SVG icons from https://github.com/lipis/flag-icons/tree/main/flags/4x3, install via npm i flag-icons, add title and class="hide"-->
+    <svg data-value="de" xmlns="http://www.w3.org/2000/svg" id="flag-icons-de" viewBox="0 0 640 480">
+      <title>Deutsch</title>
+      <path fill="#ffce00" d="M0 320h640v160H0z"/>
+      <path d="M0 0h640v160H0z"/>
+      <path fill="#d00" d="M0 160h640v160H0z"/>
+    </svg>
+    <svg class="hide" data-value="en" xmlns="http://www.w3.org/2000/svg" id="flag-icons-gb" viewBox="0 0 640 480">
+      <title>Englisch</title>
+      <path fill="#012169" d="M0 0h640v480H0z"/>
+      <path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0h75z"/>
+      <path fill="#C8102E" d="m424 281 216 159v40L369 281h55zm-184 20 6 35L54 480H0l240-179zM640 0v3L391 191l2-44L590 0h50zM0 0l239 176h-60L0 42V0z"/>
+      <path fill="#FFF" d="M241 0v480h160V0H241zM0 160v160h640V160H0z"/>
+      <path fill="#C8102E" d="M0 193v96h640v-96H0zM273 0v480h96V0h-96z"/>
+    </svg>
+    <svg class="hide" xmlns="http://www.w3.org/2000/svg" id="flag-icons-pl" viewBox="0 0 640 480">
+      <title>Polen</title>
+      <g fill-rule="evenodd">
+        <path fill="#fff" d="M640 480H0V0h640z"/>
+        <path fill="#dc143c" d="M640 480H0V240h640z"/>
+      </g>
+    </svg>
+    <svg class="hide" xmlns="http://www.w3.org/2000/svg" id="flag-icons-cz" viewBox="0 0 640 480">
+      <title>Tschechien</title>
+      <path fill="#fff" d="M0 0h640v240H0z"/>
+      <path fill="#d7141a" d="M0 240h640v240H0z"/>
+      <path fill="#11457e" d="M360 240 0 0v480z"/>
+    </svg>
+    <svg class="hide" xmlns="http://www.w3.org/2000/svg" id="flag-icons-ru" viewBox="0 0 640 480">
+      <title>Russland</title>
+      <g fill-rule="evenodd" stroke-width="1pt">
+        <path fill="#fff" d="M0 0h640v480H0z"/>
+        <path fill="#0039a6" d="M0 160h640v320H0z"/>
+        <path fill="#d52b1e" d="M0 320h640v160H0z"/>
+      </g>
+    </svg>
+  </span>
+
+  <button class="open" disabled title="Verzeichnis mit mehreren PDF öffnen">Wähle Tatbestand</button>
+  <button class="file_chooser" title="Einzelnes PDF öffnen">Füge PDF hinzu</button>
+  <button class="open_import_xml_clipboard" title="XML aus Pufferspeicher einfügen">Copy XML</button>
+  <button class="open_import_xml_file" title="XML aus Datei einfügen">XML Datei</button>
+  <button class="reset hide app profile" title="Auf Anfangszustand zurücksetzen">Reset</button>
+  <!--
+      <button class="save_all hide">Alle ausgefüllten PDFs speichern</button>
+  -->
+  <div class="error hide"></div>
+  <div id="fields_area" class="app profile hide"></div>
+</div>
+
+<div id="xml_area" class="app hide"></div>
+
+<div id="help_area" class="help hide">
+  <h1 class="shadow-font center">Hilfeseite</h1>
+  <div>
+    <ol>
+      <li><a href="#Kapitel_1">Erste Schritte</a></li>
+      <li><a href="#Kapitel_2">Hauptseite</a></li>
+      <li><a href="#Kapitel_3">Profil</a></li>
+      <li><a href="#Kapitel_4">Sicherheit</a></li>
+    </ol>
+  </div>
+  <h2 id="Kapitel_1">1 Erste Schritte</h2>
+  <p>QuickFill füllt PDFs automatisch mit den vorgegebenen Daten aus. Bevor Sie mit QuickFill starten, legen Sie bitte zuerst Ihr eigenes Profil an. Dieser Schritt ist nur ein einziges Mal am Anfang erforderlich. Unter "Profil" sind die ersten beiden Profil-Editoren für Sie wichtig: PVB und DG. Die dort angegebenen Werte "Max Mustermann" etc. sind durch Ihre eigenen Daten zu ersetzen. Das war es auch schon. Dann gehen Sie zurück zur Hauptseite, wählen einen Tatbestand aus und sehen, dass die geladenen PDFs sofort Ihre eigenen Daten enthalten.</p>
+  <p>Viel Erfolg bei der Benutzung von QuickFill!</p>
+
+  <h2 id="Kapitel_2">2 Hauptseite</h2>
+  <p>Unter "Wähle Tatbestand" können Sie ein vorbereitetes Verzeichnis auf Ihrem lokalen Rechner oder Laufwerk im Intranet auswählen, das die passenden PDF-Formulare zu diesem Tatbestand enthält. Mit "Füge PDF hinzu" werden einzelne PDF-Dateien hinzugefügt. Mit "Copy XML" können Sie XML-Daten z.B. von @rtus nach QuickFill aus dem Einfügepuffer importieren. Bei "XML Datei" funktioniert dieser Import über eine XML-Datei. Auf der Profilseite (siehe nächstes Kapitel) können Regeln und Textbausteine verändert und ergänzt werden. Mit "Reset" können diese Regeln und Textbausteine auf den Ursprungszustand zurückgesetzt werden.</p>
+
+  <h2 id="Kapitel_3">3 Profil</h2>
+  <p>Auf der Profilseite gibt man sein eigenes Profil ein. Der PVB gibt seinen Namen, Dienstrang und E-Mail ein. Dazu ersetzt er die vorgegebenen Werte "Max Mustermann" usw. durch die eigenen Daten. Dieser Vorgang ist nur einmal am Anfang notwendig. Der Browser speichert die neuen Werte. Unter den Eingabefeldern für den PVB folgen die der DG und allgemeine Regeln. Alle Regeln und Textbausteine können verändert und ergänzt werden.</p>
+
+</div>
+
+<template id="xml_template">
+  <h2>${filename}: <span class="title"></span></h2>
+  <textarea rows="5" class="import wide"></textarea>
+</template>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="black" class="keyboard-svg hide" viewBox="0 0 16 16">
+    <path d="M14 5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h12zM2 4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H2z" />
+    <path d="M13 10.25a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm0-2a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm-5 0A.25.25 0 0 1 8.25 8h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 8 8.75v-.5zm2 0a.25.25 0 0 1 .25-.25h1.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-1.5a.25.25 0 0 1-.25-.25v-.5zm1 2a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm-5-2A.25.25 0 0 1 6.25 8h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 6 8.75v-.5zm-2 0A.25.25 0 0 1 4.25 8h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 4 8.75v-.5zm-2 0A.25.25 0 0 1 2.25 8h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 2 8.75v-.5zm11-2a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm-2 0a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm-2 0A.25.25 0 0 1 9.25 6h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 9 6.75v-.5zm-2 0A.25.25 0 0 1 7.25 6h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 7 6.75v-.5zm-2 0A.25.25 0 0 1 5.25 6h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5A.25.25 0 0 1 5 6.75v-.5zm-3 0A.25.25 0 0 1 2.25 6h1.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-1.5A.25.25 0 0 1 2 6.75v-.5zm0 4a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-.5zm2 0a.25.25 0 0 1 .25-.25h5.5a.25.25 0 0 1 .25.25v.5a.25.25 0 0 1-.25.25h-5.5a.25.25 0 0 1-.25-.25v-.5z"/>
+</svg>
+
+<div class="app_area app hide">
+  <div class="keyboard-container hide">
+    <div class="app-keyboard"></div>
+  </div>
+  <h1 class="center">Eingabe des PGÜ-Falldatensatz: <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
+  <div class="case app">
+    <div class="resizer-off"> <!-- delete "off" to make it resizable -->
+      <div class="rules_area resized"></div>
+    </div>
+  </div>
+</div>
+<div class="app all_results"></div>
+
+<div class="profile_area hide profile">
+  <h1 class="shadow-font center">Profilseite <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
+  <div class="keyboard-container hide">
+    <div class="profile-keyboard"></div>
+  </div>
+  <div class="PVB editor">
+    <h3 class="center shadow-font">Profil-Editor PVB</h3>
+    <div class="rules_area"></div>
+  </div>
+  <div class="DGL editor">
+    <h3 class="center shadow-font">Profil-Editor DG</h3>
+    <div class="rules_area"></div>
+    <button class="clear right">Clear</button>
+    <button class="import right">Import</button>
+    <button class="export right">Export</button>
+    <button class="learn right">Lerne DG-Regeln aus fertig ausgefüllten Formularen</button>
+  </div>
+  <div class="textblock editor">
+    <h3 class="center shadow-font">Textbausteine</h3>
+    <div class="rules_area"></div>
+  </div>
+  <div class="Allgemein editor">
+    <h3 class="center shadow-font">Allgemeine Regeln</h3>
+    <div class="rules_area"></div>
+    <button class="clear right">Clear</button>
+    <button class="import right">Import</button>
+    <button class="export right">Export</button>
+    <button class="learn right">Lerne Regeln aus fertig ausgefüllten Formularen</button>
+  </div>
+  <div class="reason_area hide profile">
+    <p class="savings"></p>
+    <hr class="separator">
+    <h3 class="center">Die Regeln wurden wie folgt angewandt:</h3>
+    <ol class="reason-list"></ol>
+  </div>
+</div>
+
+<template id="single_result">
+  <h2><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="red" class="clickable delete" viewBox="0 0 16 16">
+    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+  </svg><span class="filename"></span><span class="title"></span><button class="hash hide">Sicherheitscode</button><button class="qrcode hide">QR-Code</button></h2>
+  <div class="result">
+    <table class="result">
+      <tr>
+        <th>Feldbezeichner</th>
+        <th>Feldwert</th>
+      </tr>
+    </table>
+    <div class="center buttons">
+      <span title="Daten nach PDF übertragen!">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" class="down cursor_pointer">
+          <path d="M17.71,12.71a1,1,0,0,0-1.42,0L13,16V6a1,1,0,0,0-2,0V16L7.71,12.71a1,1,0,0,0-1.42,0,1,1,0,0,0,0,1.41l4.3,4.29A2,2,0,0,0,12,19h0a2,2,0,0,0,1.4-.59l4.3-4.29A1,1,0,0,0,17.71,12.71Z"/>
+        </svg>
+      </span>
+      <span title="Daten aus PDF in die Tabelle übertragen!">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" class="up cursor_pointer">
+          <path d="M17.71,9.88l-4.3-4.29a2,2,0,0,0-2.82,0L6.29,9.88a1,1,0,0,0,0,1.41,1,1,0,0,0,1.42,0L11,8V19a1,1,0,0,0,2,0V8l3.29,3.29a1,1,0,1,0,1.42-1.41Z"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+  <input type="file" class="file_chooser hide">
+  <div class="resizer">
+    <!--  https://github.com/mozilla/pdf.js/wiki/Debugging-PDF.js -->
+    <iframe src="web/viewer.html?pdfBug=all&file=" class="viewer preview resized"></iframe>
+  </div>
+</template>
+
+<template id="rules_template">
+  <p class="left title">Dateneingabe unter Wert</p>
+  <table class="rule_table">
+    <tr>
+      <th>Nr</th>
+      <th>Typ</th>
+      <th>PDF</th>
+      <th colspan="2">Bezeichner</th>
+      <th>Betroffene Felder</th>
+      <th>Wert</th>
+      <th><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+      </svg></th>
+    </tr>
+    <tr class="plus_row hide" title="Neue Regel hinzufügen">
+      <td colspan="8">
+        <button class="plus">+</button>
+      </td>
+    </tr>
+  </table>
+</template>
+
+<template id="case_template">
+  <p class="left title">Dateneingabe unter Wert</p>
+  <table class="rule_table">
+    <tr>
+      <!-- how to add additional columns:
+          <th class="nr">Nr</th>
+      -->
+      <th>Bezeichner</th>
+      <th>Wert</th>
+    </tr>
+    <tr class="plus_row hide" title="Neue Regel hinzufügen">
+      <td colspan="2"> <!-- equals total number of columns -->
+        <button class="plus" title="Zeile hinzufügen">+</button>
+        <button class="clear right" title="Werte löschen">Leer</button>
+        <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
+        <button class="eval right hide" title="Werte neu berechnen">Eval</button>
+      </td>
+    </tr>
+  </table>
+</template>
+
+<template id="textblock_template">
+  <p class="left title">Texteingabe</p>
+  <table class="rule_table">
+    <tr>
+      <!-- how to add additional columns:
+          <th class="nr">Nr</th>
+      -->
+      <th>Kürzel</th>
+      <th>Textblock</th>
+    </tr>
+    <tr class="plus_row hide" title="Neuen Textblock hinzufügen">
+      <td colspan="2"> <!-- equals total number of columns -->
+        <button class="plus" title="Zeile hinzufügen">+</button>
+        <button class="import right" title="Textbausteine importieren">Import</button>
+        <button class="export right" title="Textbausteine exportieren">Export</button>
+      </td>
+    </tr>
+  </table>
+</template>
+
+<div id="statistics" class="profile hide">
+  <h2 class="profile hide">QuickFill Statistics</h2>
+  <table class="hide">
+    <thead>
+      <tr>
+        <th>Nr</th>
+        <th>PDF</th>
+        <th>Felder</th>
+        <th>Anzahl Felder</th>
+        <th>Anzahl Zeichen</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+
+<div id="rule_pretty_print" class="profile hide">
+  <h2>Rule Database</h2>
+  <div></div>
+</div>
+
+<br>
+<br>
+
+<script type="module" src="index.js"></script>
+
+</body>
+</html>
