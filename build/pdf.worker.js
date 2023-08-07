@@ -22,11 +22,11 @@
 
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
+		module.exports = root.pdfjsWorker = factory();
 	else if(typeof define === 'function' && define.amd)
-		define("pdfjs-dist/build/pdf.worker", [], factory);
+		define("pdfjs-dist/build/pdf.worker", [], () => { return (root.pdfjsWorker = factory()); });
 	else if(typeof exports === 'object')
-		exports["pdfjs-dist/build/pdf.worker"] = factory();
+		exports["pdfjs-dist/build/pdf.worker"] = root.pdfjsWorker = factory();
 	else
 		root["pdfjs-dist/build/pdf.worker"] = root.pdfjsWorker = factory();
 })(globalThis, () => {
@@ -101,7 +101,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = '3.10.27';
+    const workerVersion = '3.10.36';
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
     }
@@ -58436,8 +58436,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
   }
 }));
 var _worker = __w_pdfjs_require__(1);
-const pdfjsVersion = '3.10.27';
-const pdfjsBuild = '399475247';
+const pdfjsVersion = '3.10.36';
+const pdfjsBuild = '19c712c2d';
 })();
 
 /******/ 	return __webpack_exports__;

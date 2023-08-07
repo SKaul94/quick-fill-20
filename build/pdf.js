@@ -22,11 +22,11 @@
 
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
+		module.exports = root.pdfjsLib = factory();
 	else if(typeof define === 'function' && define.amd)
-		define("pdfjs-dist/build/pdf", [], factory);
+		define("pdfjs-dist/build/pdf", [], () => { return (root.pdfjsLib = factory()); });
 	else if(typeof exports === 'object')
-		exports["pdfjs-dist/build/pdf"] = factory();
+		exports["pdfjs-dist/build/pdf"] = root.pdfjsLib = factory();
 	else
 		root["pdfjs-dist/build/pdf"] = root.pdfjsLib = factory();
 })(globalThis, () => {
@@ -966,7 +966,7 @@ function getDocument(src) {
   }
   const fetchDocParams = {
     docId,
-    apiVersion: '3.10.27',
+    apiVersion: '3.10.36',
     data,
     password,
     disableAutoFetch,
@@ -2723,9 +2723,9 @@ class InternalRenderTask {
     }
   }
 }
-const version = '3.10.27';
+const version = '3.10.36';
 exports.version = version;
-const build = '399475247';
+const build = '19c712c2d';
 exports.build = build;
 
 /***/ }),
@@ -5254,6 +5254,7 @@ function getCurrentTransformInverse(ctx) {
   } = ctx.getTransform().invertSelf();
   return [a, b, c, d, e, f];
 }
+const useRound = globalThis.CSS?.supports?.("width: round(1.5px, 1px)");
 function setLayerDimensions(div, viewport, mustFlip = false, mustRotate = true) {
   if (viewport instanceof PageViewport) {
     const {
@@ -5263,8 +5264,10 @@ function setLayerDimensions(div, viewport, mustFlip = false, mustRotate = true) 
     const {
       style
     } = div;
-    const widthStr = `calc(var(--scale-factor) * ${pageWidth}px)`;
-    const heightStr = `calc(var(--scale-factor) * ${pageHeight}px)`;
+    const w = `var(--scale-factor) * ${pageWidth}px`,
+      h = `var(--scale-factor) * ${pageHeight}px`;
+    const widthStr = useRound ? `round(${w}, 1px)` : `calc(${w})`,
+      heightStr = useRound ? `round(${h}, 1px)` : `calc(${h})`;
     if (!mustFlip || viewport.rotation % 180 === 0) {
       style.width = widthStr;
       style.height = heightStr;
@@ -17549,8 +17552,8 @@ var _tools = __w_pdfjs_require__(5);
 var _annotation_layer = __w_pdfjs_require__(29);
 var _worker_options = __w_pdfjs_require__(14);
 var _xfa_layer = __w_pdfjs_require__(32);
-const pdfjsVersion = '3.10.27';
-const pdfjsBuild = '399475247';
+const pdfjsVersion = '3.10.36';
+const pdfjsBuild = '19c712c2d';
 })();
 
 /******/ 	return __webpack_exports__;
