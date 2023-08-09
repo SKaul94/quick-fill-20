@@ -29,7 +29,7 @@ object, iframe {
   padding: 0;
 }
 
-span {
+div > span {
   padding: 0 0.5rem;
 }
 
@@ -101,15 +101,21 @@ table {
 
 #fields_area {
   visibility: collapse;
-  height: 0;
+  height: auto;
   font-size: xx-small;
   border: thin solid black;
   border-radius: 10px;
   box-shadow: 4px 4px 3px 0 #777777;
   background-color: #e2dede;
-  width: calc(100% - 0.8rem);
+  width: 98%;
   padding: 0.4rem;
   margin: 0.5rem 0;
+}
+
+#fields_area > span {
+  display: inline-block;
+  margin: initial;
+  padding: initial;
 }
 
 #fields_area:empty {

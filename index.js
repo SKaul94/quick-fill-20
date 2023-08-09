@@ -12,7 +12,7 @@
 import {config} from './lib/config.js';
 import {firstElementWithClass, elementWithID, addCollapseIcons} from './lib/global_functions.js';
 import {fileOpen, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
-// import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js";
+// import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
 import {PdfDoc} from './lib/Doc.js';
 import {Keyboard} from './lib/simple-keyboard-index.modern.es6.js';
@@ -129,134 +129,19 @@ for (const openButton of document.body.querySelectorAll('.open')) {
 firstElementWithClass('file_chooser')?.addEventListener('click', async event => {
   event.stopImmediatePropagation();
 
-  const template = document.getElementById('single_result');
-  
-  const clone = document.createElement('div');
-  clone.classList.add('app');
-  clone.innerHTML = template.innerHTML;
-     // const clone = template.content.cloneNode(true); // should work, but does not
-  const fileInput = clone.querySelector('input.file_chooser');
-  const iFrame = clone.querySelector('iframe.viewer');
-  document.querySelector('.all_results').appendChild(clone);
+  const htmlSpace = PdfDoc.createHTMLSpace();
+  const fileInput = htmlSpace.querySelector('input.file_chooser');
 
   // open on click immediately
   fileInput.addEventListener('change', async e => {
       const file = e.target.files[0];
       if ( ! file ) return;  // request cancelled
-      clone.querySelector('.filename').textContent = file.name;
-      const url = URL.createObjectURL(file);
-      const pdfDoc = new PdfDoc( file, iFrame );
-
-      // handle changes in fields in PDF.js viewer
-      iFrame.contentWindow.PDFViewerApplication.eventBus.on( "dispatcheventinsandbox", event => {
-        const fieldName = event.source.data.fieldName;
-        const newValue = event.detail.value;
-        const field = pdfDoc.getFieldByName( fieldName );
-        if ( field ) field.value = newValue;
-      } );
-      
-      // create one thread per page to render, because you have to wait for rendering to be completed
-      // https://stackoverflow.com/questions/35718645/resolving-a-promise-with-eventlistener
-      function renderThread ( pagesCount ) {
-        let resolve = [], reject = [], promise = [];  // Array index starts with 0, page numbers start with 1
-        for ( let i = 0; i < pagesCount; i++ ){
-          promise.push( new Promise((res, rej) => {
-            resolve[i] = res;
-            reject[i] = rej;
-          }));
-        }
-        return [promise, resolve, reject];
-      }
-
-      let renderPromise, resolveRenderPromise; // Arrays of promises and resolvers for each page being fully rendered
-
-      pdfDoc.pagesRendered = new Set(); // which pages have already been rendered 
- 
-      // The PDF pages are rendered on demand, not upfront.
-      // Therefore, form data have to be filled in after the page has been rendered.
-      // This happends with the annotationeditorlayerrendered event.
-      iFrame.contentWindow.PDFViewerApplication.eventBus.on( "annotationeditorlayerrendered", async event => {
-        // add current rendered page to the set
-        pdfDoc.pagesRendered.add( parseInt( event.pageNumber ) );
-        if ( config.log ) console.log('annotationeditorlayerrendered');
-        if ( ! renderPromise ){  
-          // create array of promises at first event only
-          [renderPromise, resolveRenderPromise] = renderThread( iFrame.contentWindow.PDFViewerApplication.pdfViewer.pagesCount );
-        }
-        resolveRenderPromise[ parseInt( event.pageNumber ) - 1 ](); // Array index starts with 0, page numbers start with 1
-        delete renderPromise[ parseInt( event.pageNumber ) - 1 ];
-      }, { once: false } );
-
-      // sandboxcreated event is the last event after opening a PDF
-      iFrame.contentWindow.PDFViewerApplication.eventBus.on( "sandboxcreated", async event => {
-        if ( config.log ) console.log('=== sandboxcreated ===');
-
-        // apply rules to table after all pages have been rendered
-        pdfDoc.applyRulesToTable(); 
-
-        // scroll to all pages, that have not been rendered yet, to render them
-        const pdfViewer = iFrame.contentWindow.PDFViewerApplication.pdfViewer;
-
-        for ( let pageNumber = 1; pageNumber <= pdfViewer.pagesCount; pageNumber++){
-          if ( ! pdfDoc.pagesRendered.has( pageNumber ) ){
-            if ( config.log ) console.log( "scrollPageIntoView", pageNumber );
-            pdfViewer.scrollPageIntoView({ pageNumber });
-            // await annotationeditorlayerrendered event
-            if ( renderPromise && renderPromise[ pageNumber - 1 ] ){
-              await renderPromise[ pageNumber - 1 ]; // Array index starts with 0, page numbers start with 1
-            } else {
-              if ( config.log ) console.log( "######### Timeout fired #########" );
-              await new Promise(resolve => setTimeout(resolve, 33)); // Timeout if needed
-            } 
-          }
-        }
-
-
-        if ( config.log ) console.log( "pageViewsReady", iFrame.contentWindow.PDFViewerApplication.pdfViewer.pageViewsReady );
-
-        // start viewer with first page
-        pdfViewer.scrollPageIntoView({ pageNumber: 1 });
-        pdfDoc.applyTableToPDF();
-        
-        statisticsDiv.classList.remove('hide');
-      }, { once: true } );  // sandbox is created once only
-
-      await iFrame.contentWindow.PDFViewerApplication.open( { url } );
-
-      // pdfDoc = new PdfDoc( file, iFrame );
-      pdfDoc.fragment = clone; 
-      pdfDoc.pdfViewerApplication = iFrame.contentWindow.PDFViewerApplication;
-      // https://github.com/mozilla/pdf.js/wiki/Debugging-PDF.js
-      if ( config.debug ) iFrame.contentWindow.PDFViewerApplication.preferences.set('pdfBugEnabled', true);
-      pdfDoc.url = url;
-      // const fragment = pdfDoc.toHTMLElement();
-      // firstElementWithClass('all_results').appendChild( fragment );
-
-      await pdfDoc.build();
-
-      // After build, Editing PDF directly induces changes to the table above dynamically
-      iFrame.contentWindow.addEventListener('change',  event => { 
-        if ( ! ['scaleSelect','pageNumber'].includes( event.target.id ) ) {
-          const pdfObjectId = event.target.id.split('_').pop();
-          const pdfObject = pdfDoc._pdfObjectsDict[ pdfObjectId ];
-          const field = pdfDoc._pdfFieldsDict[ pdfObject.name ];
-        
-          switch ( field.typ ){
-            case 'checkbox':
-              const inputElement = Array.from( field.htmlRow.querySelectorAll('label') )
-                .find( el => el.textContent === pdfObject.exportValues )
-                .firstElementChild;
-              inputElement.checked = event.target.checked;
-              break;
-            case 'text':
-              field.htmlRow.querySelector('.input').textContent = event.target.value;
-              break;
-            default:
-              field.htmlRow.querySelector('input').value = event.target.value;
-          }
-        }
-      });
-
+      htmlSpace.querySelector('.filename').textContent = file.name;
+      const pdfDoc = new PdfDoc( file, htmlSpace );
+      // create URL from file, render complete PDF and fill fields based on rules
+      await pdfDoc.renderURL();  // PDFViewerApplication.open( { url } )
+      // Alternatively, render PDF from ArrayBuffer:
+      // await pdfDoc.renderArrayBuffer();  // PDFViewerApplication.open( { data } )  
    });
 
    fileInput.click();
@@ -347,17 +232,11 @@ export async function addSinglePDF( params ){
     return;
   } 
   const file = entry instanceof File ? entry : await entry.getFile();
+  const htmlSpace = await PdfDoc.createHTMLSpace( file );
+  const pdfDoc = new PdfDoc( file, htmlSpace );
 
-  const pdfDoc = new PdfDoc( file );
-  await pdfDoc.build();
-  if ( preview ){
-    const fragment = pdfDoc.toHTMLElement();
-    PdfDoc.all.set( pdfDoc, fragment );
-    firstElementWithClass('all_results').appendChild( fragment );
-    if ( config.applyPdfToTable  ) pdfDoc.applyPdfToTable();
-    pdfDoc.applyRulesToTable();
-    pdfDoc.applyTableToPDF();
-  }
+  await pdfDoc.renderArrayBuffer();
+  // await pdfDoc.renderURL();  // alternate method via URL.createObjectURL( file )
   return pdfDoc;
 }
 
