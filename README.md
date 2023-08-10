@@ -5,6 +5,7 @@
 * opens even encoded PDFs thanks to Mozilla [PDF.js](https://github.com/mozilla/pdf.js). No need for [qpdf](https://github.com/qpdf/qpdf).  
 
 ## Build newest pdfjs-dist yourself via pdf.js
+PDF.js is the main library used.
 
 ```shell
 # start in quick-fill-20 directory, go one level up

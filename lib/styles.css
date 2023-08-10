@@ -29,10 +29,6 @@ object, iframe {
   padding: 0;
 }
 
-div > span {
-  padding: 0 0.5rem;
-}
-
 table * {
   font-family: Arial, sans-serif;
 }
@@ -99,8 +95,17 @@ table {
   font-size: medium;
 }
 
+span.filename {
+  margin: 0 0.5rem;
+}
+
+.subheader {
+  font-weight: bold;
+  text-align: left;
+  margin: 0;
+}
+
 #fields_area {
-  visibility: collapse;
   height: auto;
   font-size: xx-small;
   border: thin solid black;
@@ -112,15 +117,15 @@ table {
   margin: 0.5rem 0;
 }
 
-#fields_area > span {
-  display: inline-block;
-  margin: initial;
-  padding: initial;
-}
-
 #fields_area:empty {
   border: none;
+  box-shadow: none;
   background-color: inherit;
+  height: 0;
+}
+
+#fields_area > span {
+  display: inline-block;
 }
 
 .plus {

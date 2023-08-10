@@ -27,7 +27,6 @@ import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 /************* config ***************/
 export const titleElement = document.getElementById('title');
 titleElement.innerText += ` ${config.version}`;
-if ( config.catalogue_all_fields ) document.getElementById('fields_area').classList.remove('hide');
 
 // QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
@@ -102,12 +101,12 @@ for (const openButton of document.body.querySelectorAll('.open')) {
     const expandableListOfFields = document.createElement('div');
     expandableListOfFields.classList.add( 'expandable-list-of-fields' );
     expandableListOfFields.classList.add('profile');
-    if ( ! config.catalogue_all_fields ) expandableListOfFields.classList.add('hide');
+    expandableListOfFields.classList.add('hide');
     expandableListOfFields.innerHTML = `Alle Felder aus allen PDFs:`;
     addCollapseIcons(expandableListOfFields, document.getElementById('fields_area'));
-    if (!openButton.parentElement.querySelector('.expandable-list-of-fields')){
-      openButton.parentElement.insertBefore(expandableListOfFields, elementWithID('fields_area'));
-    }
+    // if (!openButton.parentElement.querySelector('.expandable-list-of-fields')){
+    //   openButton.parentElement.insertBefore(expandableListOfFields, elementWithID('fields_area'));
+    // }
 
     document.querySelector('.error').classList.add('hide');
     for await (const entry of dirHandle.values()) {
@@ -232,7 +231,7 @@ export async function addSinglePDF( params ){
     return;
   } 
   const file = entry instanceof File ? entry : await entry.getFile();
-  const htmlSpace = await PdfDoc.createHTMLSpace( file );
+  const htmlSpace = PdfDoc.createHTMLSpace( file );
   const pdfDoc = new PdfDoc( file, htmlSpace );
 
   await pdfDoc.renderArrayBuffer();
