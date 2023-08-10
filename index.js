@@ -98,16 +98,6 @@ for (const openButton of document.body.querySelectorAll('.open')) {
       skipDirectory: entry => entry.name[0] === '.',
     });
 
-    const expandableListOfFields = document.createElement('div');
-    expandableListOfFields.classList.add( 'expandable-list-of-fields' );
-    expandableListOfFields.classList.add('profile');
-    expandableListOfFields.classList.add('hide');
-    expandableListOfFields.innerHTML = `Alle Felder aus allen PDFs:`;
-    addCollapseIcons(expandableListOfFields, document.getElementById('fields_area'));
-    // if (!openButton.parentElement.querySelector('.expandable-list-of-fields')){
-    //   openButton.parentElement.insertBefore(expandableListOfFields, elementWithID('fields_area'));
-    // }
-
     document.querySelector('.error').classList.add('hide');
     for await (const entry of dirHandle.values()) {
       await addSinglePDF( { entry, preview: true } );
