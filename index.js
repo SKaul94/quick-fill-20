@@ -215,13 +215,13 @@ export function reportError( message ){
 }
 
 export async function addSinglePDF( params ){
-  const { entry, preview } = params;
+  const { entry, mode } = params;
   if (!entry.name.endsWith('.pdf')){
     reportError(`Datei muss auf ".pdf" enden.`);
     return;
   } 
   const file = entry instanceof File ? entry : await entry.getFile();
-  const htmlSpace = PdfDoc.createHTMLSpace( file );
+  const htmlSpace = PdfDoc.createHTMLSpace( mode );
   const pdfDoc = new PdfDoc( file, htmlSpace );
 
   await pdfDoc.renderArrayBuffer();
