@@ -73,18 +73,21 @@
       </g>
     </svg>
   </span>
-
-  <button class="open" title="Verzeichnis mit mehreren PDF öffnen">Wähle Tatbestand</button>
-  <button class="file_chooser" title="Einzelnes PDF öffnen">Füge PDF hinzu</button>
-  <button class="open_import_xml_clipboard" title="XML aus Pufferspeicher einfügen">Copy XML</button>
-  <button class="open_import_xml_file" title="XML aus Datei einfügen">XML Datei</button>
-  <button class="reset hide app profile" title="Auf Anfangszustand zurücksetzen">Reset</button>
-  <!--
-      <button class="save_all hide">Alle ausgefüllten PDFs speichern</button>
-  -->
-  <div class="error hide"></div>
+  
 </div>
 
+  <!-- Buttons in the app view have class app -->
+  <button class="open app" title="Verzeichnis mit mehreren PDF öffnen">Wähle Tatbestand</button>
+  <button class="file_chooser app" title="Einzelnes PDF öffnen">Füge PDF hinzu</button>
+  <button class="open_import_xml_clipboard app" title="XML aus Pufferspeicher einfügen">Copy XML</button>
+  <button class="open_import_xml_file app" title="XML aus Datei einfügen">XML Datei</button>
+  <button class="save_all app" title="Alle ausgefüllten PDFs speichern">Save</button>
+
+  <!-- Buttons in the profile view have class profile-->
+  <button class="reset profile" title="Auf Anfangszustand zurücksetzen">Reset</button>
+  <button class="clear profile" title="Komplett Leeren: Lösche alle Regeln, alle Textbausteine">Clear</button>
+
+  <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
 
 <div id="help_area" class="help hide">
@@ -239,6 +242,10 @@
       -->
       <th>Bezeichner</th>
       <th>Wert</th>
+      <th><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+      </svg></th>
     </tr>
     <tr class="plus_row hide" title="Neue Regel hinzufügen">
       <td colspan="2"> <!-- equals total number of columns -->
@@ -260,10 +267,15 @@
       -->
       <th>Kürzel</th>
       <th>Textblock</th>
+      <th><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+      </svg></th>
     </tr>
     <tr class="plus_row hide" title="Neuen Textblock hinzufügen">
-      <td colspan="2"> <!-- equals total number of columns -->
+      <td colspan="3"> <!-- equals total number of columns -->
         <button class="plus" title="Zeile hinzufügen">+</button>
+        <button class="clear right" title="Textbausteine löschen">Clear</button>
         <button class="import right" title="Textbausteine importieren">Import</button>
         <button class="export right" title="Textbausteine exportieren">Export</button>
       </td>
