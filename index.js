@@ -95,12 +95,12 @@ for (const openButton of document.body.querySelectorAll('.open')) {
       // By specifying an ID, the user agent can remember different directories for different IDs.
       id: 'Tatbestand',
       // Callback to determine whether a directory should be entered, return `true` to skip.
-      skipDirectory: entry => entry.name[0] === '.',
+      skipDirectory: (dir) => dir.name.startsWith('.'), // skip hidden directories
     });
 
     document.querySelector('.error').classList.add('hide');
     for await (const entry of dirHandle.values()) {
-      await addSinglePDF( { entry, preview: true } );
+      await addSinglePDF( { entry } );
     }
 
     updatePdfAndDB();
@@ -144,14 +144,15 @@ function updatePdfAndDB(){
   switchToState( 'app' );
 }
 
+firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListener );
 firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xmlHandler(true) );
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
 
 firstElementWithClass('reset')?.addEventListener('click', event => {
-  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Regeln löschen?') ){
+  if ( confirm('Wollen Sie die Regeln auf den Anfangszustand zurücksetzen?') ){
     localStorage.removeItem( config.profileIdentifier );
   }
-  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Textbausteine löschen?') ){
+  if ( confirm('Wollen Sie die Textbausteine auf den Anfangszustand zurücksetzen?') ){
     localStorage.removeItem( config.autocompleteIdentifier );
   }
   location.reload();
@@ -226,6 +227,7 @@ export async function addSinglePDF( params ){
 
   await pdfDoc.renderArrayBuffer();
   // await pdfDoc.renderURL();  // alternate method via URL.createObjectURL( file )
+
   return pdfDoc;
 }
 
@@ -239,7 +241,18 @@ if ( config.profileEditors ){
 }
 
 /*************  Textblock Editor ***************/
-new TextBlockEditor( {root: 'profile_area', title: 'Kürzel und Textbausteine eingeben', plus_row: true }, );
+const textBlockEditor = new TextBlockEditor( {root: 'profile_area', title: 'Kürzel und Textbausteine eingeben', plus_row: true }, );
+
+// add listener to top clear button in the header of the profile area
+firstElementWithClass('clear')?.addEventListener('click', event => {
+  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Regeln löschen?') ){
+    Rule.DB.removeAll( rule => true );
+    // PVB-Editor add plus row
+  }
+  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Textbausteine löschen?') ){
+    textBlockEditor.removeAll();
+  }
+});
 
 /*************  SPA Router: switch between SPA states ***************/
 
