@@ -11,7 +11,7 @@
 
 import {config} from './lib/config.js';
 import {firstElementWithClass, elementWithID, addCollapseIcons} from './lib/global_functions.js';
-import {fileOpen, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
+import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
 import {PdfDoc} from './lib/Doc.js';
@@ -25,8 +25,12 @@ import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 // import {FontBytes} from './lib/Arial.js';
 
 /************* config ***************/
+
 export const titleElement = document.getElementById('title');
 titleElement.innerText += ` ${config.version}`;
+
+// save dynamic rules, before being lost by converting config to JSON 
+Rule.DynamicRules = config.dynamicRules;
 
 // QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
@@ -155,6 +159,7 @@ firstElementWithClass('reset')?.addEventListener('click', event => {
   if ( confirm('Wollen Sie die Textbausteine auf den Anfangszustand zurücksetzen?') ){
     localStorage.removeItem( config.autocompleteIdentifier );
   }
+  localStorage.removeItem( config.configIdentifier );
   location.reload();
 });
 
@@ -393,10 +398,10 @@ function makeKeyboard( aClassSelector, layout ){
           }
           break;
         case 'heute':
-          addTextInput( config.heute() );
+          addTextInput( DynamicRules.heute() );
           break;
         case 'jetzt':
-          addTextInput( config.jetzt() );
+          addTextInput( DynamicRules.jetzt() );
           break;
         default:
           const textBlock = config.textBlock[ button ];
@@ -585,3 +590,89 @@ document.querySelector('#rule_pretty_print>h2').addEventListener('click', event 
   window.scrollBy(0, window.innerHeight / 3);
 } );
 
+
+
+/*************  Configuration Editor ***************/
+
+document.querySelector('#config_editor>h2').addEventListener('click', event => {
+  const configEditorDiv = document.querySelector('#config_editor > div');
+  const config_json = JSON.stringify( config, null, 2 );
+  configEditorDiv.innerHTML = `<div contenteditable>
+      <pre>${config_json}</pre>
+      </div>
+      <button class="import">Import</button>
+      <button class="export">Export</button>
+    `;
+  const configEditorContents = configEditorDiv.querySelector('pre');
+  const importButton = document.querySelector('#config_editor .import');
+  const exportButton = document.querySelector('#config_editor .export');
+
+  configEditorContents.addEventListener('blur', event => {
+    const config_json = configEditorContents.innerText;
+    try {
+      const newConfig = JSON.parse( config_json );
+      Object.assign( config, newConfig );
+      localStorage.setItem( config.configIdentifier, config_json );
+      Rule.DB.load();
+      for ( const profileEditor of ProfileEditor.all ){
+        profileEditor.update();
+      }
+      // location.reload();
+    } catch (e) {
+      alert(e);
+    }
+  } );
+
+  importButton.addEventListener('click', async event => {
+    event.stopPropagation();
+    const fileHandle = await fileOpen( {
+      // List of allowed MIME types, defaults to `*/*`.
+      mimeTypes: ['text/javascript', 'application/json'],
+      // List of allowed file extensions (with leading '.'), defaults to `''`.
+      extensions: [ '.js', '.txt', '.json' ],
+      // Set to `true` for allowing multiple files, defaults to `false`.
+      multiple: false,
+      // Textual description for file dialog , defaults to `''`.
+      description: 'QuickFill-Konfiguration',
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'config',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    } );
+    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
+    const fileContents = await file.text();
+    configEditorContents.innerText = fileContents.trim();
+    try {
+      const newConfig = JSON.parse( fileContents );
+      Object.assign( config, newConfig );
+      localStorage.setItem( config.configIdentifier, JSON.stringify( config ) );
+      // location.reload();
+    } catch (e) {
+      alert(e);
+    }
+  });
+
+  exportButton.addEventListener('click', event => {
+    event.stopPropagation();
+    const json = JSON.stringify( config, null, 2 );
+    const blob = new Blob([json], {type: "application/json"});
+    fileSave( blob, {
+      // Suggested file name to use, defaults to `''`.
+      fileName: 'config.json',
+      // Suggested file extensions (with leading '.'), defaults to `''`.
+      extensions: ['.json'],
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'config',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    });
+  });
+  
+  window.scrollBy(0, window.innerHeight / 3);
+  configEditorDiv.focus();
+  
+} );
