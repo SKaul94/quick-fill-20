@@ -37,8 +37,8 @@ test('PDF exception', t => {
       "value": "ccc"
     }];
   loadRules( rules );
-  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'123456789.pdf'}, '123456789.pdf', null, 'aaa' ) ), 'bbb' );
-  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'abcd.pdf'}, 'abcd.pdf', null, 'aaa' ) ), 'ccc' );
+  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'123456789.pdf'}, 'aaa', [ { type: 'text '} ] ) ), 'bbb' );
+  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'abcd.pdf'}, 'aaa', [ { type: 'text '} ] ) ), 'ccc' );
 });
 
 test('multiple PDF exceptions', t => {
@@ -54,8 +54,9 @@ test('multiple PDF exceptions', t => {
       "value": "ccc"
     }];
   loadRules( rules );
-  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'123456789.pdf'}, '123.pdf', null, 'aaa' ) ), 'bbb' );
-  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'abcd.pdf'}, 'abcd.pdf', null, 'aaa' ) ), 'ccc' );
+  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'123xxx.pdf'}, 'aaa', [ { type: 'text '} ] ) ), 'bbb' );
+  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'456xxx.pdf'}, 'aaa', [ { type: 'text '} ] ) ), 'bbb' );
+  t.is( Rule.DB.valueFromAllRulesOf( new Field({fileName:'abcd.pdf'}, 'aaa', [ { type: 'text '} ] ) ), 'ccc' );
 });
 
 test('apply rule in a single step', t => {

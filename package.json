@@ -1,5 +1,5 @@
 {
-  "name": "QuickFill",
+  "name": "quick-fill-20",
   "version": "2.0.0",
   "description": "",
   "main": "generateSingleHTMLFile.js",
@@ -10,7 +10,8 @@
     "build": "build"
   },
   "scripts": {
-    "test": "ava",
+    "test-global-ava": "ava",
+    "test": "node_modules/ava/entrypoints/cli.mjs",
     "makeKeyboard": "rollup --config simple-keyboard-rollup-input.js",
     "bundle": "rollup index.js --file bundle.js --format iife --name \"QuickFill\"",
     "deploy-old": "node deploy.js",
