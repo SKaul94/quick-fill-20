@@ -11,10 +11,10 @@
   },
   "scripts": {
     "test-global-ava": "ava",
+    "test-local-ava": "node_modules/ava/entrypoints/cli.mjs",
     "test": "node_modules/ava/entrypoints/cli.mjs",
     "makeKeyboard": "rollup --config simple-keyboard-rollup-input.js",
     "bundle": "rollup index.js --file bundle.js --format iife --name \"QuickFill\"",
-    "deploy-old": "node deploy.js",
     "deploy": "node generateSingleHTMLFile.js index.html deploy/QuickFill.html",
     "make": "node generateSingleHTMLFile.js"
   },

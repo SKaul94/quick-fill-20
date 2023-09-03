@@ -1,6 +1,6 @@
 import Keyboard from 'simple-keyboard';
 
-const keyboard = new Keyboard({
+export const keyboard = new Keyboard({
   onChange: input => onChange(input),
   onKeyPress: button => onKeyPress(button)
 });
