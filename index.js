@@ -97,7 +97,7 @@ for (const openButton of document.body.querySelectorAll('.open')) {
       // Suggested directory in which the file picker opens. A well-known directory or a file handle.
       startIn: 'downloads',
       // By specifying an ID, the user agent can remember different directories for different IDs.
-      id: 'Tatbestand',
+      id: openButton.dataset.remember || 'Tatbestand',
       // Callback to determine whether a directory should be entered, return `true` to skip.
       skipDirectory: (dir) => dir.name.startsWith('.'), // skip hidden directories
     });
