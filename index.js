@@ -299,9 +299,7 @@ function switchToState( state ){
   }
   switch ( state ){
     case 'app':
-      PdfDoc.invalidateAllRuleApplications();
-      PdfDoc.applyAllRulesToTables();
-      PdfDoc.applyAllTablesToPdf();
+      PdfDoc.updateAll();
       break;
     case 'profile':
       Rule.DB.updateAllFields();
