@@ -153,12 +153,18 @@ firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xm
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
 
 firstElementWithClass('reset')?.addEventListener('click', event => {
-  if ( confirm('Wollen Sie die Regeln auf den Anfangszustand zurücksetzen?') ){
+  if ( confirm('Wollen Sie alle Regeln und Textbausteine auf den Anfangszustand zurücksetzen?') ){
     localStorage.removeItem( config.profileIdentifier );
-  }
-  if ( confirm('Wollen Sie die Textbausteine auf den Anfangszustand zurücksetzen?') ){
     localStorage.removeItem( config.autocompleteIdentifier );
+  } else {
+    if ( confirm('Wollen Sie nur die Regeln auf den Anfangszustand zurücksetzen?') ){
+      localStorage.removeItem( config.profileIdentifier );
+    }
+    if ( confirm('Wollen Sie nur die Textbausteine auf den Anfangszustand zurücksetzen?') ){
+      localStorage.removeItem( config.autocompleteIdentifier );
+    }
   }
+  
   localStorage.removeItem( config.configIdentifier );
   location.reload();
 });
@@ -492,12 +498,12 @@ export function importXML( textArea ){
       }
     }
 
-    caseEditor.update();
-
     if ( config.autoupdate ){
-      PdfDoc.applyAllRulesToTables();
-      PdfDoc.applyAllTablesToPdf();
+      PdfDoc.updateAll();
     }
+
+    caseEditor.update();
+    
   }
 
   function addRuleFor( xmlField, xmlLongName ){
