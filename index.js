@@ -19,12 +19,15 @@ import {Keyboard} from './lib/simple-keyboard-index.modern.es6.js';
 import {ProfileEditor} from "./lib/ProfileEditor.js";
 import {CaseEditor} from "./lib/CaseEditor.js";
 import {TextBlockEditor} from "./lib/TextBlockEditor.js";
+import {XMLInterpreter} from "./lib/XMLInterpreter.js";
+// store binary in IndexedDB:
+// import { openDB, deleteDB, wrap, unwrap } from './lib/idb.js';
 
 // Additional imports for adding other fonts:
 // import {fontkit} from './lib/fontkit.es.js';
 // import {FontBytes} from './lib/Arial.js';
 
-/************* config ***************/
+/* * *********** config ************* * */
 
 export const titleElement = document.getElementById('title');
 titleElement.innerText += ` ${config.version}`;
@@ -35,7 +38,7 @@ Rule.DynamicRules = config.dynamicRules;
 // QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
 
-/*************  enhance object inspection for debugging only ***************/
+/* *  ***********  enhance object inspection for debugging only ************* * */
 if ( config.debug ) Object.prototype.allPropFun = function(){
   let allNames = new Set();
   for (let o = this; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
@@ -46,7 +49,7 @@ if ( config.debug ) Object.prototype.allPropFun = function(){
   return Array.from(allNames);
 }
 
-/*************  add SVG icon to both, app and profile  ***************/
+/* *  ***********  add SVG icon to both, app and profile  ************* * */
 for ( const button of document.querySelectorAll('button.keyboard') ){
   const svg = document.querySelector('svg.keyboard-svg').cloneNode( true );
   svg.classList.remove('hide');
@@ -57,7 +60,7 @@ for ( const button of document.querySelectorAll('button.keyboard') ){
   });
 }
 
-/*************  add language chooser ( country flag button )  ***************/
+/* *  ***********  add language chooser ( country flag button )  ************* * */
 globalThis[ 'QuickFill_Language' ] = 'de';
 document.getElementById('select-flag')?.addEventListener('click', event => {
   const icons = document.querySelectorAll('#select-flag > svg');
@@ -79,7 +82,7 @@ document.getElementById('select-flag')?.addEventListener('click', event => {
 });
 
 
-/*************  Event Handler ***************/
+/* *  ***********  Event Handler ************* * */
 // DirectoryPicker
 for (const openButton of document.body.querySelectorAll('.open')) {
   openButton.addEventListener('click', async event => {
@@ -150,7 +153,63 @@ function updatePdfAndDB(){
 
 firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListener );
 firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xmlHandler(true) );
+firstElementWithClass('load_pdf_asyl')?.addEventListener('click', pdfLoader('asyl') );
+firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('minder') );
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
+
+firstElementWithClass('interprete_xml_file')?.addEventListener('click', function(event){
+  const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
+  interpreter.interpret( event );
+} );
+
+function pdfLoader( kindOfPDF ){
+  return async event => {
+      event.stopImmediatePropagation();
+
+      const pdfFileHandles = await fileOpen( {
+        // List of allowed MIME types, defaults to `*/*`.
+        mimeTypes: ['application/pdf'],
+        // List of allowed file extensions (with leading '.'), defaults to `''`.
+        extensions: [ '.pdf', '.PDF' ],
+        // Set to `true` for allowing multiple files, defaults to `false`.
+        multiple: false,
+        // Textual description for file dialog , defaults to `''`.
+        description: 'PDF',
+        // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+        startIn: 'downloads',
+        // By specifying an ID, the user agent can remember different directories for different IDs.
+        id: event.target.dataset.remember || 'PDF',
+        // Include an option to not apply any filter in the file picker, defaults to `false`.
+        excludeAcceptAllOption: false,
+    } );
+
+    if ( ! globalThis.pdfBinary ) globalThis.pdfBinary = {};
+    
+    const pdfFile = pdfFileHandles instanceof File ? pdfFileHandles : await pdfFileHandles.getFile();
+    globalThis.pdfBinary[ kindOfPDF ] = new Uint8Array( await pdfFile.arrayBuffer() );
+    const pdfFilename = pdfFile.name;
+
+    // store binary in IndexedDB:
+    // https://github.com/jakearchibald/idb
+    // const db = await openDB( config.indexedDBName, undefined, {
+    //   upgrade(db, oldVersion, newVersion, transaction, event) {
+    //     // …
+    //   },
+    //   blocked(currentVersion, blockedVersion, event) {
+    //     // …
+    //   },
+    //   blocking(currentVersion, blockedVersion, event) {
+    //     // …
+    //   },
+    //   terminated() {
+    //     // …
+    //   },
+    // });
+  
+  
+  };
+
+}
 
 firstElementWithClass('reset')?.addEventListener('click', event => {
   if ( confirm('Wollen Sie alle Regeln und Textbausteine auf den Anfangszustand zurücksetzen?') ){
@@ -215,7 +274,7 @@ export function xmlHandler( clipBoard ){
       }
     }
     xmlArea.appendChild(xmlFragment);
-    xmlArea.classList.remove('hide');
+    if ( config.debug ) xmlArea.classList.remove('hide');
     importXML( textArea );
   };
 }
@@ -242,7 +301,7 @@ export async function addSinglePDF( params ){
   return pdfDoc;
 }
 
-/*************  Profile Editors ***************/
+/* *  ***********  Profile Editors ************* * */
 
 Rule.DB.load();
 if ( config.profileEditors ){
@@ -251,7 +310,7 @@ if ( config.profileEditors ){
   }
 }
 
-/*************  Textblock Editor ***************/
+/* *  ***********  Textblock Editor ************* * */
 const textBlockEditor = new TextBlockEditor( {root: 'profile_area', title: 'Kürzel und Textbausteine eingeben', plus_row: true }, );
 
 // add listener to top clear button in the header of the profile area
@@ -265,14 +324,14 @@ firstElementWithClass('clear')?.addEventListener('click', event => {
   }
 });
 
-/*************  SPA Router: switch between SPA states ***************/
+/* *  ***********  SPA Router: switch between SPA states ************* * */
 
 const QuickFillParams = new URLSearchParams( document.location.search );
 const QuickFillState = QuickFillParams.get('state');
 
 // states of SPA
-const QuickFillAllStates = ['app','profile','help'];
-let currentState = QuickFillState || 'app'; // initial state
+const QuickFillAllStates = ['xml','app','profile','help'];
+let currentState = QuickFillState || 'xml'; // initial state
 
 switchToState( currentState );
 
@@ -298,6 +357,8 @@ function switchToState( state ){
     showElement.classList.remove('hide');
   }
   switch ( state ){
+    case 'xml':
+      break;
     case 'app':
       PdfDoc.updateAll();
       break;
@@ -319,7 +380,7 @@ function isVisible( state ){
   return true;
 }
 
-/*************  Case Rules ***************/
+/* *  ***********  Case Rules ************* * */
 
 Rule.DB.caseRules = Rule.DB.filter( rule => rule.owner === 'case' );
 const caseDiv = document.querySelector('.case');
@@ -336,7 +397,7 @@ if ( Rule.DB.caseRules.length === 0 ){
   Rule.DB.store();  // add case rules to localStorage
 }
 
-/*************  Case Data Editor ***************/
+/* *  ***********  Case Data Editor ************* * */
 
 const caseEditor = new CaseEditor( { root: 'app_area', title: 'Dateneingabe unter Wert', plus_row: true } );
 
@@ -344,7 +405,7 @@ if ( ! caseDiv.querySelector('[autofocus]') ) caseDiv.querySelector('[contentedi
 
 if ( config.prefill ) document.querySelector('.prefill').classList.remove('hide');
 
-/*************  Keyboard ***************/
+/* *  ***********  Keyboard ************* * */
 
 const addTextInput = ( content ) => {
   if ( Rule.lastActiveRow ){
@@ -357,7 +418,7 @@ const addTextInput = ( content ) => {
   }
 }
 
-/*************  add keyboard to both, app and profile  ***************/
+/* *  ***********  add keyboard to both, app and profile  ************* * */
 makeKeyboard('app-keyboard', config.appKeyboardLayout );
 makeKeyboard('profile-keyboard', config.profileKeyboardLayout );
 
@@ -431,7 +492,7 @@ function makeKeyboard( aClassSelector, layout ){
 
 
 
-/*************  XML Import ***************/
+/* *  ***********  XML Import ************* * */
 
 export function importXML( textArea ){
   let xmlDOM;
@@ -479,21 +540,7 @@ export function importXML( textArea ){
 
     // add rules generated by XML data
     for ( const [xmlField, xmlLongName] of xmlFieldLongNameMap.entries() ){
-      if ( xmlLongName.includes('Kodiert.daten') ){
-        // const mimeType = xmlLongNameXmlField.get( xmlLongName.replace('daten', 'mimeType') )?.textContent;
-        // const contentDescription = xmlLongNameXmlField.get( xmlLongName.replace('daten', 'inhaltsbeschreibung') )?.textContent;;
-        // if ( ! mimeType ) {
-        //   console.log( xmlLongName );
-        //   debugger;
-        // } else {  // seems not be base64, perhaps Radix64 ???
-        //   const mmTag = mimeType.match('image') ?
-        //     `<img alt="${contentDescription || 'Bild'}" src="data:${mimeType};base64,${xmlField.textContent}">` :
-        //     `<object type="${mimeType}" data="data:${mimeType};base64,${xmlField.textContent}"></object>`;
-        //   addRuleFor( mmTag, xmlLongName );
-        // }
-      } else {
-        addRuleFor( xmlField, xmlLongName );  // include all XML data
-      }
+      addRuleFor( xmlField, xmlLongName );  // include all XML data of this person
     }
 
     if ( config.autoupdate ){
@@ -504,7 +551,7 @@ export function importXML( textArea ){
     
   }
 
-  function addRuleFor( xmlField, xmlLongName ){
+  function addRuleFor( xmlField, xmlLongName, personName ){
     // add new case rule to Rule.DB and append new row to case table
     const xmlData = xmlField.textContent ? xmlField.textContent : xmlField;
     const rule = xmlLongName;
@@ -514,7 +561,7 @@ export function importXML( textArea ){
       return oldRule;
     }
     if ( xmlData && xmlData.length > 0 && ! config.ignoreXMLFields.includes( rule ) ){
-      return new Rule({rule, value: xmlData, rule_type: 'superstring', owner: 'case' });
+      return new Rule({rule, value: xmlData, rule_type: 'superstring', owner: 'case', person: personName });
 
       // caseDiv.querySelector('tbody').insertBefore(newRow, caseDiv.querySelector('tr.plus_row'));
       // newRule.installCaseListeners(); // withRuleEditing = false
@@ -537,7 +584,7 @@ export function importXML( textArea ){
 }
 
 
-/*************  QuickFill Statistics ***************/
+/* *  ***********  QuickFill Statistics ************* * */
 
 const statisticsDiv = document.getElementById('statistics');
 statisticsDiv.addEventListener('click', _ => {
@@ -581,7 +628,7 @@ statisticsDiv.addEventListener('click', _ => {
   }
 });
 
-/*************  Rule Database Pretty Print ***************/
+/* *  ***********  Rule Database Pretty Print ************* * */
 
 document.querySelector('#rule_pretty_print>h2').addEventListener('click', event => {
   const prettyPrintDiv = document.querySelector('#rule_pretty_print > div');
@@ -603,7 +650,7 @@ document.querySelector('#rule_pretty_print>h2').addEventListener('click', event 
 
 
 
-/*************  Configuration Editor ***************/
+/* * ***********  Configuration Editor ************* * */
 
 document.querySelector('#config_editor>h2').addEventListener('click', event => {
   const configEditorDiv = document.querySelector('#config_editor > div');

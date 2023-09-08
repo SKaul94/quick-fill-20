@@ -176,10 +176,6 @@ button:active, .up:active, .down:active, #select-flag:active {
   transform: translateY(4px);
 }
 
-#app_button {
-  background-color: lightcoral;
-}
-
 .rule {
   min-width: 10rem;
 }
@@ -339,4 +335,36 @@ hr.separator:before {
 .help p {
   margin: initial;
   text-align: justify;
+}
+
+ul.menu {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding-left: 0;
+  justify-content: space-between;
+}
+
+ul.menu > li {
+  flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
+  border-radius: 6px;
+  background-color: lightgrey;
+  box-shadow: 4px 4px 3px 0 #777777;
+  padding: 0.3rem;
+  margin-top: 0.3rem;
+  margin-right: 0.3rem;
+  text-align: center;
+  border: thin solid;
+  border-color: white black black white;
+}
+
+ul.menu > li.active {
+  background-color: lightcoral;
+}
+
+ul.menu > li:hover {
+  flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
+  background-color: white;
+  border-color: black;
+  cursor: pointer;
 }
