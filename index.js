@@ -21,7 +21,7 @@ import {CaseEditor} from "./lib/CaseEditor.js";
 import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
-// import { openDB, deleteDB, wrap, unwrap } from './lib/idb.js';
+import { get, set  } from './lib/idb-keyval.js';
 
 // Additional imports for adding other fonts:
 // import {fontkit} from './lib/fontkit.es.js';
@@ -188,25 +188,12 @@ function pdfLoader( kindOfPDF ){
     globalThis.pdfBinary[ kindOfPDF ] = new Uint8Array( await pdfFile.arrayBuffer() );
     globalThis.pdfBinary[ kindOfPDF ].filename = pdfFile.name;
 
-
     // store binary in IndexedDB:
-    // https://github.com/jakearchibald/idb
-    // const db = await openDB( config.indexedDBName, undefined, {
-    //   upgrade(db, oldVersion, newVersion, transaction, event) {
-    //     // …
-    //   },
-    //   blocked(currentVersion, blockedVersion, event) {
-    //     // …
-    //   },
-    //   blocking(currentVersion, blockedVersion, event) {
-    //     // …
-    //   },
-    //   terminated() {
-    //     // …
-    //   },
-    // });
-  
-  
+    const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+    const key = kindOfPDF + '_' + language;
+    if ( ! await get(key) ) {
+      await set(key, globalThis.pdfBinary[ kindOfPDF ]);
+    }  
   };
 
 }
