@@ -184,10 +184,10 @@ function pdfLoader( kindOfPDF ){
     } );
 
     if ( ! globalThis.pdfBinary ) globalThis.pdfBinary = {};
-    
     const pdfFile = pdfFileHandles instanceof File ? pdfFileHandles : await pdfFileHandles.getFile();
     globalThis.pdfBinary[ kindOfPDF ] = new Uint8Array( await pdfFile.arrayBuffer() );
-    const pdfFilename = pdfFile.name;
+    globalThis.pdfBinary[ kindOfPDF ].filename = pdfFile.name;
+
 
     // store binary in IndexedDB:
     // https://github.com/jakearchibald/idb
