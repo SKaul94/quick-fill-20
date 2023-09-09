@@ -30,6 +30,10 @@ object, iframe {
   top: -10000px;
 }
 
+.spacy {
+  margin: 1rem 0;
+}
+
 .delete {
   margin: 0 1rem 0 0;
   padding: 0;

@@ -21,7 +21,7 @@ import {CaseEditor} from "./lib/CaseEditor.js";
 import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
-import { get, set  } from './lib/idb-keyval.js';
+import * as Idb from './lib/idb-keyval.js';
 
 // Additional imports for adding other fonts:
 // import {fontkit} from './lib/fontkit.es.js';
@@ -153,16 +153,53 @@ function updatePdfAndDB(){
 
 firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListener );
 firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xmlHandler(true) );
+firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
+
 firstElementWithClass('load_pdf_asyl')?.addEventListener('click', pdfLoader('asyl') );
 firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('minder') );
-firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
+firstElementWithClass('load_all_pdf_asyl')?.addEventListener('click', pdfAllLoader() );
+firstElementWithClass('load_all_pdf_minder')?.addEventListener('click', pdfAllLoader() );
+firstElementWithClass('load_single_pdf')?.addEventListener('click', pdfLoader('other') );
 
 firstElementWithClass('interprete_xml_file')?.addEventListener('click', function(event){
   const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
   interpreter.interpret( event );
 } );
 
-function pdfLoader( kindOfPDF ){
+function pdfAllLoader(){
+  return async event => {
+    event.stopImmediatePropagation();
+
+    const openButton = event.target;
+
+    const dirHandle = await directoryOpen({
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: openButton.dataset.remember || 'Tatbestand',
+      // Callback to determine whether a directory should be entered, return `true` to skip.
+      skipDirectory: (dir) => dir.name.startsWith('.'), // skip hidden directories
+    });
+  
+    // document.querySelector('.error').classList.add('hide');
+    for await (const entry of dirHandle.values()) {
+      const pdfFile = entry instanceof File ? entry : await entry.getFile();
+      const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
+      const kindOfPDF = pdfFile.name.split('-')[1];
+      const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+      const key = `${kindOfPDF}_${language}`;
+
+      // store binary in IndexedDB:
+      await Idb.set( key, pdfBinary );
+      const li = document.createElement('li');
+      li.innerText = `${key} => ${pdfFile.name}`;
+      firstElementWithClass('loaded_pdfs')?.appendChild(li);
+      firstElementWithClass('null_item')?.remove();
+    }
+  };
+}
+
+function pdfLoader(){
   return async event => {
       event.stopImmediatePropagation();
 
@@ -183,16 +220,19 @@ function pdfLoader( kindOfPDF ){
         excludeAcceptAllOption: false,
     } );
 
-    if ( ! globalThis.pdfBinary ) globalThis.pdfBinary = {};
     const pdfFile = pdfFileHandles instanceof File ? pdfFileHandles : await pdfFileHandles.getFile();
-    globalThis.pdfBinary[ kindOfPDF ] = new Uint8Array( await pdfFile.arrayBuffer() );
-    globalThis.pdfBinary[ kindOfPDF ].filename = pdfFile.name;
 
     // store binary in IndexedDB:
+    const kindOfPDF = pdfFile.name.split('-')[1];
     const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
-    const key = kindOfPDF + '_' + language;
-    if ( ! await get(key) ) {
-      await set(key, globalThis.pdfBinary[ kindOfPDF ]);
+    const key = `${kindOfPDF}_${language}`;
+
+    if ( ! await Idb.get(key) ) {
+      await Idb.set(key, new Uint8Array( await pdfFile.arrayBuffer() ));
+      const li = document.createElement('li');
+      li.innerText = `${key} => ${pdfFile.name}`;
+      firstElementWithClass('loaded_pdfs')?.appendChild(li);
+      firstElementWithClass('null_item')?.remove();
     }  
   };
 
@@ -278,11 +318,19 @@ export async function addSinglePDF( params ){
     reportError(`Datei muss auf ".pdf" enden.`);
     return;
   } 
-  const file = entry instanceof File ? entry : await entry.getFile();
+  const pdfFile = entry instanceof File ? entry : await entry.getFile();
   const htmlSpace = PdfDoc.createHTMLSpace( mode );
-  const pdfDoc = new PdfDoc( file, htmlSpace );
+  const pdfDoc = new PdfDoc( pdfFile, htmlSpace );
 
-  await pdfDoc.renderArrayBuffer();
+  const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
+  const kindOfPDF = pdfFile.name.split('-')[1];
+  const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+  const key = `${kindOfPDF}_${language}`;
+
+  // store binary in IndexedDB:
+  Idb.set( key, pdfBinary );
+
+  await pdfDoc.renderArrayBuffer( pdfBinary );
   // await pdfDoc.renderURL();  // alternate method via URL.createObjectURL( file )
 
   return pdfDoc;
@@ -317,8 +365,8 @@ const QuickFillParams = new URLSearchParams( document.location.search );
 const QuickFillState = QuickFillParams.get('state');
 
 // states of SPA
-const QuickFillAllStates = ['xml','app','profile','help'];
-let currentState = QuickFillState || 'xml'; // initial state
+const QuickFillAllStates = ['pdf','xml','app','profile','help'];
+let currentState = QuickFillState || await get('pdf_loaded')?'xml':'pdf'; // initial state
 
 switchToState( currentState );
 
@@ -332,7 +380,7 @@ for ( const state of QuickFillAllStates ){
   });
 }
 
-function switchToState( state ){
+async function switchToState( state ){
   if ( state === currentState && isVisible( state ) ) return;
   const basicUrl = document.location.origin + document.location.pathname;
   const oldHash = document.location.hash;
@@ -344,6 +392,17 @@ function switchToState( state ){
     showElement.classList.remove('hide');
   }
   switch ( state ){
+    case 'pdf':
+      const all_loaded_pdfs = await Idb.keys();
+      if ( all_loaded_pdfs.length >  firstElementWithClass('loaded_pdfs').childElementCount ){
+        for ( const pdf of all_loaded_pdfs ){
+          const li = document.createElement('li');
+          li.innerText = pdf;
+          firstElementWithClass('loaded_pdfs')?.appendChild(li);
+          firstElementWithClass('null_item')?.remove();
+        }
+      }
+      break;
     case 'xml':
       break;
     case 'app':
