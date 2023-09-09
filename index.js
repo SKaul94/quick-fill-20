@@ -367,7 +367,7 @@ const QuickFillState = QuickFillParams.get('state');
 
 // states of SPA
 const QuickFillAllStates = ['pdf','xml','app','profile','help'];
-let currentState = QuickFillState || await get('pdf_loaded')?'xml':'pdf'; // initial state
+let currentState = QuickFillState || (await Idb.keys()).length?'xml':'pdf'; // initial state
 
 switchToState( currentState );
 
