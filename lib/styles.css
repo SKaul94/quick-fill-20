@@ -34,6 +34,11 @@ object, iframe {
   margin: 1rem 0;
 }
 
+.bold {
+  font-size: larger;
+  font-weight: bolder;
+}
+
 .delete {
   margin: 0 1rem 0 0;
   padding: 0;

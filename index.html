@@ -90,8 +90,7 @@
   <button class="load_pdf_asyl xml" title="PDF für Asylantrag für Erwachsene laden" data-remember="asyl">Erwachsen</button>
 <button class="load_pdf_minder xml" title="PDF für Asylantrag für Minderjährige laden" data-remember="minder">Minderjährig</button>
 -->
-<button class="interprete_xml_file xml" title="XML aus Datei einfügen und interpretieren" data-remember="XML">XML</button>
-<button class="save_all app xml" title="Alle ausgefüllten PDFs speichern">Save</button>
+
 
 <!-- Buttons in the profile view have class profile-->
 <button class="reset profile" title="Auf Anfangszustand zurücksetzen">Reset</button>
@@ -100,6 +99,13 @@
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
 <div id="xml_analyse" class="xml">
+  <h1>XML laden und PDFs automatisch ausfüllen</h1>
+  <label class="bold" for="language_selector">Sprache:</label> 
+  <select name="language" id="language_selector">
+    <option value="">--Bitte auswählen:--</option>
+  </select>
+  <button class="interprete_xml_file xml" title="XML aus Datei einfügen und interpretieren" data-remember="XML">XML</button>
+  <button class="save_all app xml" title="Alle ausgefüllten PDFs speichern">Save</button>
   <ul class="menu"></ul>
 </div>
 <div id="pdf_loader" class="pdf">

@@ -392,9 +392,9 @@ async function switchToState( state ){
   for ( const showElement of document.querySelectorAll( '.' + state ) ){
     showElement.classList.remove('hide');
   }
+  const all_loaded_pdfs = await Idb.keys();
   switch ( state ){
     case 'pdf':
-      const all_loaded_pdfs = await Idb.keys();
       if ( all_loaded_pdfs.length >  firstElementWithClass('loaded_pdfs').childElementCount ){
         for ( const pdf of all_loaded_pdfs ){
           const li = document.createElement('li');
@@ -405,6 +405,14 @@ async function switchToState( state ){
       }
       break;
     case 'xml':
+      const language_selector = document.getElementById('language_selector');
+      language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
+      for ( const language of new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) ){
+        const option = document.createElement('option');
+        option.innerText = language;
+        option.value = language;
+        language_selector.appendChild(option);
+      }
       break;
     case 'app':
       PdfDoc.updateAll();
