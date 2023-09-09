@@ -184,6 +184,7 @@ function pdfAllLoader(){
     // document.querySelector('.error').classList.add('hide');
     for await (const entry of dirHandle.values()) {
       const pdfFile = entry instanceof File ? entry : await entry.getFile();
+      if ( pdfFile.name?.match(/\(\d+\)/) ) continue;
       const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
       const kindOfPDF = pdfFile.name.split('-')[1];
       const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
