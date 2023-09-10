@@ -363,11 +363,12 @@ firstElementWithClass('clear')?.addEventListener('click', event => {
 /* *  ***********  SPA Router: switch between SPA states ************* * */
 
 const QuickFillParams = new URLSearchParams( document.location.search );
-const QuickFillState = QuickFillParams.get('state');
+const QuickFillState = QuickFillParams.get('state') || 'xml';
+const numberOfLoadedPDFs = (await Idb.keys()).length;
 
 // states of SPA
 const QuickFillAllStates = ['pdf','xml','app','profile','help'];
-let currentState = QuickFillState || (await Idb.keys()).length?'xml':'pdf'; // initial state
+let currentState = numberOfLoadedPDFs ? QuickFillState :'pdf'; // initial state
 
 switchToState( currentState );
 
