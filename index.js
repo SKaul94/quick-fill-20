@@ -166,6 +166,10 @@ firstElementWithClass('interprete_xml_file')?.addEventListener('click', function
   interpreter.interpret( event );
 } );
 
+language_selector.addEventListener('change', event => {
+  localStorage.setItem('quickfill_xml_language', event.target.value);
+});
+
 function pdfAllLoader(){
   return async event => {
     event.stopImmediatePropagation();
@@ -408,11 +412,17 @@ async function switchToState( state ){
     case 'xml':
       const language_selector = document.getElementById('language_selector');
       language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
-      for ( const language of new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) ){
+      const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
+      for ( const language of allLanguages ){
         const option = document.createElement('option');
         option.innerText = language;
         option.value = language;
         language_selector.appendChild(option);
+      }
+      const language = localStorage.getItem('quickfill_xml_language') || 'englisch'; 
+      if ( allLanguages.includes( language ) ){
+        language_selector.value = language;
+        localStorage.setItem('quickfill_xml_language', language);
       }
       break;
     case 'app':

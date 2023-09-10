@@ -27,10 +27,10 @@
   <h1>JavaScript ist ausgeschaltet. Bitte einschalten!</h1>
 </noscript>
 <div id="fixed-right-buttons">
-  <button id="profile_button" class="pdf app xml help">Profil</button>
-  <button id="app_button" class="pdf profile xml help hide">App</button>
-  <button id="xml_button" class="pdf app profile help hide">XML</button>
-  <button id="pdf_button" class="app xml profile help hide">PDF</button>
+  <button id="profile_button" class="pdf app xml help" title="Individuelles Profil eines Nutzers">Profil</button>
+  <button id="app_button" class="pdf profile xml help hide" title="Allgemeine App für beliebige Fälle">App</button>
+  <button id="xml_button" class="pdf app profile help hide" title="Mittels XML-Import serienweise PDFs ausfüllen">XML</button>
+  <button id="pdf_button" class="app xml profile help hide" title="PDF-Formulare auf Vorrat öffnen und im Browser merken">PDF</button>
   <svg id="help_button" class="clickable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
     <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
@@ -38,6 +38,7 @@
 </div>
 <h1 id="title" class="shadow-font">QuickFill</h1>
 <div class="app">
+  <h1 class="shadow-font center">Sonderfälle</h1>
   <span id="select-flag" class="hide"> <!-- Flag and Language Chooser. SVG icons from https://github.com/lipis/flag-icons/tree/main/flags/4x3, install via npm i flag-icons, add title and class="hide"-->
     <svg data-value="de" xmlns="http://www.w3.org/2000/svg" id="flag-icons-de" viewBox="0 0 640 480">
       <title>Deutsch</title>
@@ -99,8 +100,11 @@
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
 <div id="xml_analyse" class="xml">
-  <h1>XML laden und PDFs automatisch ausfüllen</h1>
-  <label class="bold" for="language_selector">Sprache:</label> 
+  <h1 class="shadow-font center">XML laden und PDFs automatisch ausfüllen <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
+  <div class="keyboard-container hide">
+    <div class="profile-keyboard"></div>
+  </div>
+  <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Sprache:</label> 
   <select name="language" id="language_selector">
     <option value="">--Bitte auswählen:--</option>
   </select>
@@ -109,7 +113,7 @@
   <ul class="menu"></ul>
 </div>
 <div id="pdf_loader" class="pdf">
-  <h1>PDF-Formulare laden</h1>
+  <h1 class="shadow-font center">PDF-Formulare laden</h1>
   <button class="load_all_pdf_asyl pdf" title="Alle PDFs für Asylantrag für Erwachsene laden" data-remember="asyl">Alle PDFs für Asylantrag für Erwachsene laden</button>
   <button class="load_all_pdf_minder pdf" title="Alle PDFs für Asylantrag für Minderjährige laden" data-remember="minder">Alle PDFs für Asylantrag für Minderjährige laden</button>
   <button class="load_single_pdf pdf" title="Einzelnes PDF laden" data-remember="einzeln">Einzelnes PDF laden</button>
@@ -244,13 +248,13 @@
   <p class="left title">Dateneingabe unter Wert</p>
   <table class="rule_table">
     <tr>
-      <th>Nr</th>
-      <th>Typ</th>
-      <th>PDF</th>
+      <th class="nr">Nr</th>
+      <th class="typ">Typ</th>
+      <th class="pdf">PDF</th>
       <th colspan="2">Bezeichner</th>
       <th>Betroffene Felder</th>
-      <th>Wert</th>
-      <th><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+      <th class="value">Wert</th>
+      <th class="del"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
       </svg></th>
