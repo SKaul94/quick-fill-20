@@ -104,7 +104,7 @@
   <div class="keyboard-container hide">
     <div class="profile-keyboard"></div>
   </div>
-  <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Sprache:</label> 
+  <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Allgemeine Sprache:</label> 
   <select name="language" id="language_selector">
     <option value="">--Bitte auswählen:--</option>
   </select>
@@ -238,6 +238,10 @@
     </div>
   </div>
   <input type="file" class="file_chooser hide">
+  <label class="language_selector bold hide" title="Sprache wählen, in der das Formular erscheinen sollen.">Individuelle Sprache:</label> 
+  <select name="language" class="language_selector hide">
+    <option value="">--Bitte auswählen:--</option>
+  </select>
   <div class="resizer">
     <!--  https://github.com/mozilla/pdf.js/wiki/Debugging-PDF.js -->
     <iframe src="web/viewer.html?pdfBug=all&file=" class="viewer preview resized"></iframe>
