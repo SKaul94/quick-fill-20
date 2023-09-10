@@ -396,13 +396,13 @@ async function switchToState( state ){
   const all_loaded_pdfs = await Idb.keys();
   switch ( state ){
     case 'pdf':
-      if ( all_loaded_pdfs.length >  firstElementWithClass('loaded_pdfs').childElementCount ){
-        for ( const pdf of all_loaded_pdfs ){
-          const li = document.createElement('li');
-          li.innerText = pdf;
-          firstElementWithClass('loaded_pdfs')?.appendChild(li);
-          firstElementWithClass('null_item')?.remove();
-        }
+      const list = firstElementWithClass('loaded_pdfs');
+      list.innerHTML = `<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>`;
+      for ( const pdf of all_loaded_pdfs ){
+        const li = document.createElement('li');
+        li.innerText = pdf;
+        list?.appendChild(li);
+        firstElementWithClass('null_item')?.remove();
       }
       break;
     case 'xml':
