@@ -972,7 +972,7 @@ function getDocument(src) {
   }
   const fetchDocParams = {
     docId,
-    apiVersion: '3.11.26',
+    apiVersion: '3.11.54',
     data,
     password,
     disableAutoFetch,
@@ -2733,9 +2733,9 @@ class InternalRenderTask {
     }
   }
 }
-const version = '3.11.26';
+const version = '3.11.54';
 exports.version = version;
-const build = '08f9e4828';
+const build = 'b1578225f';
 exports.build = build;
 
 /***/ }),
@@ -2943,6 +2943,7 @@ class AnnotationEditor {
     this.annotationElementId = null;
     this._willKeepAspectRatio = false;
     this._initialOptions.isCentered = parameters.isCentered;
+    this._structTreeParentId = null;
     const {
       rotation,
       rawDims: {
@@ -3103,7 +3104,7 @@ class AnnotationEditor {
     const [parentWidth, parentHeight] = this.parentDimensions;
     this.x += tx / parentWidth;
     this.y += ty / parentHeight;
-    if (this.x < 0 || this.x > 1 || this.y < 0 || this.y > 1) {
+    if (this.parent && (this.x < 0 || this.x > 1 || this.y < 0 || this.y > 1)) {
       const {
         x,
         y
@@ -4689,7 +4690,7 @@ class AnnotationEditorUIManager {
       this.#draggingEditors.set(editor, {
         savedX: editor.x,
         savedY: editor.y,
-        savedPageIndex: editor.parent.pageIndex,
+        savedPageIndex: editor.pageIndex,
         newX: 0,
         newY: 0,
         newPageIndex: -1
@@ -4707,12 +4708,12 @@ class AnnotationEditorUIManager {
     for (const [{
       x,
       y,
-      parent
+      pageIndex
     }, value] of map) {
       value.newX = x;
       value.newY = y;
-      value.newPageIndex = parent.pageIndex;
-      mustBeAddedInUndoStack ||= x !== value.savedX || y !== value.savedY || parent.pageIndex !== value.savedPageIndex;
+      value.newPageIndex = pageIndex;
+      mustBeAddedInUndoStack ||= x !== value.savedX || y !== value.savedY || pageIndex !== value.savedPageIndex;
     }
     if (!mustBeAddedInUndoStack) {
       return false;
@@ -12921,6 +12922,7 @@ class AnnotationEditorLayer {
       this.div.append(div);
       editor.isAttachedToDOM = true;
     }
+    editor.fixAndSetPosition();
     this.moveEditorInDOM(editor);
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
@@ -12935,15 +12937,19 @@ class AnnotationEditorLayer {
     if (editor.div.contains(activeElement)) {
       editor._focusEventsAllowed = false;
       setTimeout(() => {
-        editor.div.addEventListener("focusin", () => {
+        if (!editor.div.contains(document.activeElement)) {
+          editor.div.addEventListener("focusin", () => {
+            editor._focusEventsAllowed = true;
+          }, {
+            once: true
+          });
+          activeElement.focus();
+        } else {
           editor._focusEventsAllowed = true;
-        }, {
-          once: true
-        });
-        activeElement.focus();
+        }
       }, 0);
     }
-    this.#accessibilityManager?.moveElementInDOM(this.div, editor.div, editor.contentDiv, true);
+    editor._structTreeParentId = this.#accessibilityManager?.moveElementInDOM(this.div, editor.div, editor.contentDiv, true);
   }
   addOrRebuild(editor) {
     if (editor.needsToBeRebuilt()) {
@@ -13110,6 +13116,7 @@ class AnnotationEditorLayer {
   }
   destroy() {
     if (this.#uiManager.getActive()?.parent === this) {
+      this.#uiManager.commitOrRemove();
       this.#uiManager.setActiveEditor(null);
     }
     for (const editor of this.#editors.values()) {
@@ -13643,7 +13650,8 @@ class FreeTextEditor extends _editor.AnnotationEditor {
       value: this.#content,
       pageIndex: this.pageIndex,
       rect,
-      rotation: this.rotation
+      rotation: this.rotation,
+      structTreeParentId: this._structTreeParentId
     };
     if (isForCopying) {
       return serialized;
@@ -13791,6 +13799,16 @@ class AnnotationElement {
     if (createQuadrilaterals) {
       this._createQuadrilaterals();
     }
+  }
+  static _hasPopupData({
+    titleObj,
+    contentsObj,
+    richText
+  }) {
+    return !!(titleObj?.str || contentsObj?.str || richText?.str);
+  }
+  get hasPopupData() {
+    return AnnotationElement._hasPopupData(this.data);
   }
   _createContainer(ignoreBorder) {
     const {
@@ -14429,9 +14447,8 @@ class LinkAnnotationElement extends AnnotationElement {
 }
 class TextAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable
+      isRenderable: true
     });
   }
   render() {
@@ -14443,7 +14460,7 @@ class TextAnnotationElement extends AnnotationElement {
     image.dataset.l10nArgs = JSON.stringify({
       type: this.data.name
     });
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this.container.append(image);
@@ -14472,7 +14489,7 @@ class WidgetAnnotationElement extends AnnotationElement {
     } = _util.FeatureTest.platform;
     return isWin && event.ctrlKey || isMac && event.metaKey;
   }
-  _setEventListener(element, baseName, eventName, valueGetter) {
+  _setEventListener(element, elementData, baseName, eventName, valueGetter) {
     if (baseName.includes("mouse")) {
       element.addEventListener(baseName, event => {
         this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
@@ -14488,6 +14505,20 @@ class WidgetAnnotationElement extends AnnotationElement {
       });
     } else {
       element.addEventListener(baseName, event => {
+        if (baseName === "blur") {
+          if (!elementData.focused || !event.relatedTarget) {
+            return;
+          }
+          elementData.focused = false;
+        } else if (baseName === "focus") {
+          if (elementData.focused) {
+            return;
+          }
+          elementData.focused = true;
+        }
+        if (!valueGetter) {
+          return;
+        }
         this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
           source: this,
           detail: {
@@ -14499,10 +14530,20 @@ class WidgetAnnotationElement extends AnnotationElement {
       });
     }
   }
-  _setEventListeners(element, names, getter) {
+  _setEventListeners(element, elementData, names, getter) {
     for (const [baseName, eventName] of names) {
       if (eventName === "Action" || this.data.actions?.[eventName]) {
-        this._setEventListener(element, baseName, eventName, getter);
+        if (eventName === "Focus" || eventName === "Blur") {
+          elementData ||= {
+            focused: false
+          };
+        }
+        this._setEventListener(element, elementData, baseName, eventName, getter);
+        if (eventName === "Focus" && !this.data.actions?.Blur) {
+          this._setEventListener(element, elementData, "blur", "Blur", null);
+        } else if (eventName === "Blur" && !this.data.actions?.Focus) {
+          this._setEventListener(element, elementData, "focus", "Focus", null);
+        }
       }
     }
   }
@@ -14586,7 +14627,8 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
         userValue: textContent,
         formattedValue: fieldFormattedValues,
         lastCommittedValue: null,
-        commitKey: 1
+        commitKey: 1,
+        focused: false
       };
       if (this.data.multiLine) {
         element = document.createElement("textarea");
@@ -14637,6 +14679,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       };
       if (this.enableScripting && this.hasJSActions) {
         element.addEventListener("focus", event => {
+          if (elementData.focused) {
+            return;
+          }
           const {
             target
           } = event;
@@ -14645,6 +14690,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.lastCommittedValue = target.value;
           elementData.commitKey = 1;
+          elementData.focused = true;
         });
         element.addEventListener("updatefromsandbox", jsEvent => {
           this.showElementAndHideCanvas(jsEvent.target);
@@ -14745,9 +14791,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
         const _blurListener = blurListener;
         blurListener = null;
         element.addEventListener("blur", event => {
-          if (!event.relatedTarget) {
+          if (!elementData.focused || !event.relatedTarget) {
             return;
           }
+          elementData.focused = false;
           const {
             value
           } = event.target;
@@ -14825,7 +14872,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             });
           });
         }
-        this._setEventListeners(element, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.value);
+        this._setEventListeners(element, elementData, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.value);
       }
       if (blurListener) {
         element.addEventListener("blur", blurListener);
@@ -14922,7 +14969,7 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
         };
         this._dispatchEventFromSandbox(actions, jsEvent);
       });
-      this._setEventListeners(element, [["change", "Validate"], ["change", "Action"], ["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.checked);
+      this._setEventListeners(element, null, [["change", "Validate"], ["change", "Action"], ["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.checked);
     }
     this._setBackgroundColor(element);
     this._setDefaultPropertiesFromJS(element);
@@ -14998,7 +15045,7 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
         };
         this._dispatchEventFromSandbox(actions, jsEvent);
       });
-      this._setEventListeners(element, [["change", "Validate"], ["change", "Action"], ["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.checked);
+      this._setEventListeners(element, null, [["change", "Validate"], ["change", "Action"], ["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.checked);
     }
     this._setBackgroundColor(element);
     this._setDefaultPropertiesFromJS(element);
@@ -15233,7 +15280,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
           }
         });
       });
-      this._setEventListeners(selectElement, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"], ["input", "Action"], ["input", "Validate"]], event => event.target.value);
+      this._setEventListeners(selectElement, null, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"], ["input", "Action"], ["input", "Validate"]], event => event.target.value);
     } else {
       selectElement.addEventListener("input", function (event) {
         storage.setValue(id, {
@@ -15256,9 +15303,8 @@ class PopupAnnotationElement extends AnnotationElement {
       data,
       elements
     } = parameters;
-    const isRenderable = !!(data.titleObj?.str || data.contentsObj?.str || data.richText?.str);
     super(parameters, {
-      isRenderable
+      isRenderable: AnnotationElement._hasPopupData(data)
     });
     this.elements = elements;
   }
@@ -15339,6 +15385,7 @@ class PopupElement {
       element.addEventListener("click", this.#boundToggle);
       element.addEventListener("mouseenter", this.#boundShow);
       element.addEventListener("mouseleave", this.#boundHide);
+      element.classList.add("popupTriggerArea");
     }
     for (const element of elements) {
       element.container?.addEventListener("keydown", this.#boundKeyDown);
@@ -15503,9 +15550,8 @@ class PopupElement {
 }
 class FreeTextAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
     this.textContent = parameters.data.textContent;
@@ -15525,7 +15571,7 @@ class FreeTextAnnotationElement extends AnnotationElement {
       }
       this.container.append(content);
     }
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this._editOnDoubleClick();
@@ -15536,9 +15582,8 @@ exports.FreeTextAnnotationElement = FreeTextAnnotationElement;
 class LineAnnotationElement extends AnnotationElement {
   #line = null;
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
   }
@@ -15560,7 +15605,7 @@ class LineAnnotationElement extends AnnotationElement {
     line.setAttribute("fill", "transparent");
     svg.append(line);
     this.container.append(svg);
-    if (!data.popupRef) {
+    if (!data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     return this.container;
@@ -15575,9 +15620,8 @@ class LineAnnotationElement extends AnnotationElement {
 class SquareAnnotationElement extends AnnotationElement {
   #square = null;
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
   }
@@ -15600,7 +15644,7 @@ class SquareAnnotationElement extends AnnotationElement {
     square.setAttribute("fill", "transparent");
     svg.append(square);
     this.container.append(svg);
-    if (!data.popupRef) {
+    if (!data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     return this.container;
@@ -15615,9 +15659,8 @@ class SquareAnnotationElement extends AnnotationElement {
 class CircleAnnotationElement extends AnnotationElement {
   #circle = null;
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
   }
@@ -15640,7 +15683,7 @@ class CircleAnnotationElement extends AnnotationElement {
     circle.setAttribute("fill", "transparent");
     svg.append(circle);
     this.container.append(svg);
-    if (!data.popupRef) {
+    if (!data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     return this.container;
@@ -15655,9 +15698,8 @@ class CircleAnnotationElement extends AnnotationElement {
 class PolylineAnnotationElement extends AnnotationElement {
   #polyline = null;
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
     this.containerClassName = "polylineAnnotation";
@@ -15685,8 +15727,8 @@ class PolylineAnnotationElement extends AnnotationElement {
     polyline.setAttribute("fill", "transparent");
     svg.append(polyline);
     this.container.append(svg);
-    if (!data.popupRef) {
-      this._createPopup(polyline, data);
+    if (!data.popupRef && this.hasPopupData) {
+      this._createPopup();
     }
     return this.container;
   }
@@ -15706,15 +15748,14 @@ class PolygonAnnotationElement extends PolylineAnnotationElement {
 }
 class CaretAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
   }
   render() {
     this.container.classList.add("caretAnnotation");
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     return this.container;
@@ -15723,9 +15764,8 @@ class CaretAnnotationElement extends AnnotationElement {
 class InkAnnotationElement extends AnnotationElement {
   #polylines = [];
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
     this.containerClassName = "inkAnnotation";
@@ -15754,8 +15794,8 @@ class InkAnnotationElement extends AnnotationElement {
       polyline.setAttribute("stroke-width", data.borderStyle.width || 1);
       polyline.setAttribute("stroke", "transparent");
       polyline.setAttribute("fill", "transparent");
-      if (!data.popupRef) {
-        this._createPopup(polyline, data);
+      if (!data.popupRef && this.hasPopupData) {
+        this._createPopup();
       }
       svg.append(polyline);
     }
@@ -15772,15 +15812,14 @@ class InkAnnotationElement extends AnnotationElement {
 exports.InkAnnotationElement = InkAnnotationElement;
 class HighlightAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true,
       createQuadrilaterals: true
     });
   }
   render() {
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this.container.classList.add("highlightAnnotation");
@@ -15789,15 +15828,14 @@ class HighlightAnnotationElement extends AnnotationElement {
 }
 class UnderlineAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true,
       createQuadrilaterals: true
     });
   }
   render() {
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this.container.classList.add("underlineAnnotation");
@@ -15806,15 +15844,14 @@ class UnderlineAnnotationElement extends AnnotationElement {
 }
 class SquigglyAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true,
       createQuadrilaterals: true
     });
   }
   render() {
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this.container.classList.add("squigglyAnnotation");
@@ -15823,15 +15860,14 @@ class SquigglyAnnotationElement extends AnnotationElement {
 }
 class StrikeOutAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true,
       createQuadrilaterals: true
     });
   }
   render() {
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     this.container.classList.add("strikeoutAnnotation");
@@ -15840,15 +15876,14 @@ class StrikeOutAnnotationElement extends AnnotationElement {
 }
 class StampAnnotationElement extends AnnotationElement {
   constructor(parameters) {
-    const isRenderable = !!(parameters.data.popupRef || parameters.data.titleObj?.str || parameters.data.contentsObj?.str || parameters.data.richText?.str);
     super(parameters, {
-      isRenderable,
+      isRenderable: true,
       ignoreBorder: true
     });
   }
   render() {
     this.container.classList.add("stampAnnotation");
-    if (!this.data.popupRef) {
+    if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
     return this.container;
@@ -15876,6 +15911,7 @@ class FileAttachmentAnnotationElement extends AnnotationElement {
   render() {
     this.container.classList.add("fileAttachmentAnnotation");
     const {
+      container,
       data
     } = this;
     let trigger;
@@ -15888,14 +15924,23 @@ class FileAttachmentAnnotationElement extends AnnotationElement {
         trigger.style = `filter: opacity(${Math.round(data.fillAlpha * 100)}%);`;
       }
     }
-    trigger.classList.add("popupTriggerArea");
-    trigger.addEventListener("dblclick", this._download.bind(this));
+    trigger.addEventListener("dblclick", this.#download.bind(this));
     this.#trigger = trigger;
-    if (!data.popupRef && (data.titleObj?.str || data.contentsObj?.str || data.richText)) {
+    const {
+      isMac
+    } = _util.FeatureTest.platform;
+    container.addEventListener("keydown", evt => {
+      if (evt.key === "Enter" && (isMac ? evt.metaKey : evt.ctrlKey)) {
+        this.#download();
+      }
+    });
+    if (!data.popupRef && this.hasPopupData) {
       this._createPopup();
+    } else {
+      trigger.classList.add("popupTriggerArea");
     }
-    this.container.append(trigger);
-    return this.container;
+    container.append(trigger);
+    return container;
   }
   getElementsToTriggerPopup() {
     return this.#trigger;
@@ -15903,7 +15948,7 @@ class FileAttachmentAnnotationElement extends AnnotationElement {
   addHighlightArea() {
     this.container.classList.add("highlightArea");
   }
-  _download() {
+  #download() {
     this.downloadManager?.openOrDownloadData(this.container, this.content, this.filename);
   }
 }
@@ -17203,7 +17248,8 @@ class InkEditor extends _editor.AnnotationEditor {
       paths: this.#serializePaths(this.scaleFactor / this.parentScale, this.translationX, this.translationY, rect),
       pageIndex: this.pageIndex,
       rect,
-      rotation: this.rotation
+      rotation: this.rotation,
+      structTreeParentId: this._structTreeParentId
     };
   }
 }
@@ -17537,7 +17583,8 @@ class StampEditor extends _editor.AnnotationEditor {
       pageIndex: this.pageIndex,
       rect: this.getRect(0, 0),
       rotation: this.rotation,
-      isSvg: this.#isSvg
+      isSvg: this.#isSvg,
+      structTreeParentId: this._structTreeParentId
     };
     if (isForCopying) {
       serialized.bitmapUrl = this.#serializeBitmap(true);
@@ -17865,8 +17912,8 @@ var _tools = __w_pdfjs_require__(5);
 var _annotation_layer = __w_pdfjs_require__(29);
 var _worker_options = __w_pdfjs_require__(14);
 var _xfa_layer = __w_pdfjs_require__(32);
-const pdfjsVersion = '3.11.26';
-const pdfjsBuild = '08f9e4828';
+const pdfjsVersion = '3.11.54';
+const pdfjsBuild = 'b1578225f';
 })();
 
 /******/ 	return __webpack_exports__;
