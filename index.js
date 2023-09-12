@@ -125,7 +125,7 @@ for (const openButton of document.body.querySelectorAll('.open')) {
 firstElementWithClass('file_chooser')?.addEventListener('click', async event => {
   event.stopImmediatePropagation();
 
-  const htmlSpace = PdfDoc.createHTMLSpace();
+  const htmlSpace = PdfDoc.createHTMLSpace('app');
   const fileInput = htmlSpace.querySelector('input.file_chooser');
 
   // open on click immediately
