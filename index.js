@@ -398,6 +398,7 @@ async function switchToState( state ){
     showElement.classList.remove('hide');
   }
   const all_loaded_pdfs = await Idb.keys();
+  const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
   switch ( state ){
     case 'pdf':
       const list = firstElementWithClass('loaded_pdfs');
@@ -410,15 +411,16 @@ async function switchToState( state ){
       }
       break;
     case 'xml':
-      const language_selector = document.getElementById('language_selector');
-      language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
-      const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
-      for ( const language of allLanguages ){
-        const option = document.createElement('option');
-        option.innerText = language;
-        option.value = language;
-        language_selector.appendChild(option);
+      for ( const language_selector of document.querySelectorAll('.language_selector') ){
+        language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
+        for ( const language of allLanguages ){
+          const option = document.createElement('option');
+          option.innerText = language;
+          option.value = language;
+          language_selector.appendChild(option);
+        }
       }
+      const language_selector = document.getElementById('language_selector');
       const language = localStorage.getItem('quickfill_xml_language') || 'englisch'; 
       if ( allLanguages.includes( language ) ){
         language_selector.value = language;
