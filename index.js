@@ -346,7 +346,8 @@ export async function addSinglePDF( params ){
 Rule.DB.load();
 if ( config.profileEditors ){
   for ( const profileEditorSpec of config.profileEditors ){
-    new ProfileEditor( profileEditorSpec );
+    const profileEditor = new ProfileEditor( profileEditorSpec );
+    profileEditor.render();
   }
 }
 
@@ -371,8 +372,8 @@ const QuickFillState = QuickFillParams.get('state') || 'xml';
 const numberOfLoadedPDFs = (await Idb.keys()).length;
 
 // states of SPA
-const QuickFillAllStates = ['pdf','xml','app','profile','help'];
-let currentState = numberOfLoadedPDFs ? QuickFillState :'pdf'; // initial state
+const QuickFillAllStates = ['pdf_loader','xml','app','profile','help'];
+let currentState = numberOfLoadedPDFs ? QuickFillState :'pdf_loader'; // initial state
 
 switchToState( currentState );
 
@@ -400,7 +401,7 @@ async function switchToState( state ){
   const all_loaded_pdfs = await Idb.keys();
   const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
   switch ( state ){
-    case 'pdf':
+    case 'pdf_loader':
       const list = firstElementWithClass('loaded_pdfs');
       list.innerHTML = `<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>`;
       for ( const pdf of all_loaded_pdfs ){
@@ -460,7 +461,7 @@ if ( Rule.DB.caseRules.length === 0 ){
     // if ( Array.from( caseDiv.querySelectorAll('td.rule') ).find( td => td.innerText === caseRule ) ) debugger;
     const newRule = new Rule({rule: caseRule, rule_type: 'equal', owner: 'case' });
     newRule.value = Rule.DB.valueFromAllRulesOf( '${' + caseRule + '}$' );
-    newRule.toCaseRow( false, caseRule, Rule.caseOptions() );
+    newRule.toCaseRow( false, caseRule, Rule.headerOptions('case') );
   }
   Rule.DB.store();  // add case rules to localStorage
 }
@@ -619,7 +620,7 @@ export function importXML( textArea ){
     
   }
 
-  function addRuleFor( xmlField, xmlLongName, personName ){
+  function addRuleFor( xmlField, xmlLongName ){
     // add new case rule to Rule.DB and append new row to case table
     const xmlData = xmlField.textContent ? xmlField.textContent : xmlField;
     const rule = xmlLongName;
@@ -629,7 +630,7 @@ export function importXML( textArea ){
       return oldRule;
     }
     if ( xmlData && xmlData.length > 0 && ! config.ignoreXMLFields.includes( rule ) ){
-      return new Rule({rule, value: xmlData, rule_type: 'superstring', owner: 'case', person: personName });
+      return new Rule({rule, value: xmlData, rule_type: 'superstring', owner: 'case' });
 
       // caseDiv.querySelector('tbody').insertBefore(newRow, caseDiv.querySelector('tr.plus_row'));
       // newRule.installCaseListeners(); // withRuleEditing = false

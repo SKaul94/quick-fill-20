@@ -27,17 +27,17 @@
   <h1>JavaScript ist ausgeschaltet. Bitte einschalten!</h1>
 </noscript>
 <div id="fixed-right-buttons">
-  <button id="profile_button" class="pdf app xml help" title="Individuelles Profil eines Nutzers">Profil</button>
-  <button id="app_button" class="pdf profile xml help hide" title="Allgemeine App für beliebige Fälle">App</button>
-  <button id="xml_button" class="pdf app profile help hide" title="Mittels XML-Import serienweise PDFs ausfüllen">XML</button>
-  <button id="pdf_button" class="app xml profile help hide" title="PDF-Formulare auf Vorrat öffnen und im Browser merken">PDF</button>
+  <button id="profile_button" class="pdf_loader app xml help" title="Individuelles Profil eines Nutzers">Profil</button>
+  <button id="app_button" class="pdf_loader profile xml help hide" title="Allgemeine App für beliebige Fälle">App</button>
+  <button id="xml_button" class="pdf_loader app profile help hide" title="Mittels XML-Import serienweise PDFs ausfüllen">XML</button>
+  <button id="pdf_loader_button" class="app xml profile help hide" title="PDF-Formulare auf Vorrat öffnen und im Browser merken">PDF</button>
   <svg id="help_button" class="clickable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
     <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
   </svg>
 </div>
 <h1 id="title" class="shadow-font">QuickFill</h1>
-<div class="app">
+<div class="app hide">
   <h1 class="shadow-font center">Sonderfälle</h1>
   <span id="select-flag" class="hide"> <!-- Flag and Language Chooser. SVG icons from https://github.com/lipis/flag-icons/tree/main/flags/4x3, install via npm i flag-icons, add title and class="hide"-->
     <svg data-value="de" xmlns="http://www.w3.org/2000/svg" id="flag-icons-de" viewBox="0 0 640 480">
@@ -83,10 +83,10 @@
 <!-- 
   <button class="open app" title="Verzeichnis mit mehreren PDF öffnen" data-remember="Tatbestand">Wähle Tatbestand</button>
 -->
-<button class="open app" title="Verzeichnis mit mehreren PDF öffnen" data-remember="ordner">Öffne Ordner</button>
-<button class="file_chooser app" title="Einzelnes PDF öffnen" data-remember="PDF">Füge PDF hinzu</button>
-<button class="open_import_xml_clipboard app" title="XML aus Pufferspeicher einfügen">Copy XML</button>
-<button class="open_import_xml_file app" title="XML aus Datei einfügen" data-remember="XML">XML Datei</button>
+<button class="open app hide" title="Verzeichnis mit mehreren PDF öffnen" data-remember="ordner">Öffne Ordner</button>
+<button class="file_chooser app hide" title="Einzelnes PDF öffnen" data-remember="PDF">Füge PDF hinzu</button>
+<button class="open_import_xml_clipboard app hide" title="XML aus Pufferspeicher einfügen">Copy XML</button>
+<button class="open_import_xml_file app hide" title="XML aus Datei einfügen" data-remember="XML">XML Datei</button>
 <!-- 
   <button class="load_pdf_asyl xml" title="PDF für Asylantrag für Erwachsene laden" data-remember="asyl">Erwachsen</button>
 <button class="load_pdf_minder xml" title="PDF für Asylantrag für Minderjährige laden" data-remember="minder">Minderjährig</button>
@@ -94,12 +94,12 @@
 
 
 <!-- Buttons in the profile view have class profile-->
-<button class="reset profile" title="Auf Anfangszustand zurücksetzen">Reset</button>
-<button class="clear profile" title="Komplett Leeren: Lösche alle Regeln, alle Textbausteine">Clear</button>
+<button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
+<button class="clear profile hide" title="Komplett Leeren: Lösche alle Regeln, alle Textbausteine">Clear</button>
 
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
-<div id="xml_analyse" class="xml">
+<div id="xml_analyse" class="xml xml_analyse hide">
   <h1 class="shadow-font center">XML laden und PDFs automatisch ausfüllen <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
   <div class="keyboard-container hide">
     <div class="profile-keyboard"></div>
@@ -112,11 +112,11 @@
   <button class="save_all app xml" title="Alle ausgefüllten PDFs speichern">Save</button>
   <ul class="menu"></ul>
 </div>
-<div id="pdf_loader" class="pdf">
+<div id="pdf_loader" class="pdf_loader hide">
   <h1 class="shadow-font center">PDF-Formulare laden</h1>
-  <button class="load_all_pdf_asyl pdf" title="Alle PDFs für Asylantrag für Erwachsene laden" data-remember="asyl">Alle PDFs für Asylantrag für Erwachsene laden</button>
-  <button class="load_all_pdf_minder pdf" title="Alle PDFs für Asylantrag für Minderjährige laden" data-remember="minder">Alle PDFs für Asylantrag für Minderjährige laden</button>
-  <button class="load_single_pdf pdf" title="Einzelnes PDF laden" data-remember="einzeln">Einzelnes PDF laden</button>
+  <button class="load_all_pdf_asyl pdf_loader" title="Alle PDFs für Asylantrag für Erwachsene laden" data-remember="asyl">Alle PDFs für Asylantrag für Erwachsene laden</button>
+  <button class="load_all_pdf_minder pdf_loader" title="Alle PDFs für Asylantrag für Minderjährige laden" data-remember="minder">Alle PDFs für Asylantrag für Minderjährige laden</button>
+  <button class="load_single_pdf pdf_loader" title="Einzelnes PDF laden" data-remember="einzeln">Einzelnes PDF laden</button>
   <hr class="spacy">
   <h2>Bisher geladen</h2>
   <ol class="loaded_pdfs">
@@ -166,10 +166,29 @@
   <h1 class="center">Eingabe des PGÜ-Falldatensatz: <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
   <div class="case app">
     <div class="resizer-off"> <!-- delete "off" to make it resizable -->
-      <div class="rules_area resized"></div>
+      <div class="rules_area resized">
+        <table class="result">
+          <tr>
+            <th>Feldbezeichner</th>
+            <th>Feldwert</th>
+          </tr>
+        </table>
+      </div>
     </div>
   </div>
 </div>
+
+<template id="personal_data_template">
+  <hr class="spacy">
+  <div class="person editor">
+    <h3 class="center shadow-font">Zusätzliche Daten zur Person</h3>
+    <div class="rules_area"></div>
+    <button class="clear right">Clear</button>
+    <button class="import right">Import</button>
+    <button class="export right">Export</button>
+    <button class="learn right">Lerne Regeln aus fertig ausgefüllten Formularen</button>
+  </div>
+</template>
 
 <div class="app all_results"></div>
 
@@ -201,6 +220,14 @@
     <button class="import right">Import</button>
     <button class="export right">Export</button>
     <button class="learn right">Lerne Regeln aus fertig ausgefüllten Formularen</button>
+  </div>
+  <div class="template editor">
+    <h3 class="center shadow-font">Person</h3>
+    <div class="rules_area"></div>
+    <button class="clear right">Clear</button>
+    <button class="import right">Import</button>
+    <button class="export right">Export</button>
+    <button class="learn right">Lerne DG-Regeln aus fertig ausgefüllten Formularen</button>
   </div>
   <div class="reason_area hide profile">
     <p class="savings"></p>
@@ -293,6 +320,24 @@
     </tr>
     <tr class="plus_row hide" title="Neue Regel hinzufügen">
       <td colspan="2"> <!-- equals total number of columns -->
+        <button class="plus" title="Zeile hinzufügen">+</button>
+        <button class="clear right" title="alle Werte in dieser Tabelle löschen">Leer</button>
+        <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
+        <button class="eval right hide" title="Werte neu berechnen">Eval</button>
+      </td>
+    </tr>
+  </table>
+</template>
+
+<template id="person_template">
+  <p class="left title">Dateneingabe unter Wert</p>
+  <table class="rule_table">
+    <tr>
+      <th>Bezeichner</th>
+      <th>Wert</th>
+    </tr>
+    <tr class="plus_row hide" title="Neue Regel hinzufügen">
+      <td colspan="5"> <!-- equals total number of columns -->
         <button class="plus" title="Zeile hinzufügen">+</button>
         <button class="clear right" title="alle Werte in dieser Tabelle löschen">Leer</button>
         <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
