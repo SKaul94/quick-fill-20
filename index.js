@@ -255,9 +255,13 @@ firstElementWithClass('reset')?.addEventListener('click', event => {
       localStorage.removeItem( config.autocompleteIdentifier );
     }
   }
-  
-  localStorage.removeItem( config.configIdentifier );
-  location.reload();
+  // location.reload();
+});
+
+firstElementWithClass('save')?.addEventListener('click', event => {
+  localStorage.setItem( config.profileIdentifier, JSON.stringify( Rule.DB.sortedRules() ) );
+  localStorage.setItem( config.autocompleteIdentifier, JSON.stringify( config.autocompleteDict ) );
+  alert('Fertig gespeichert.');
 });
 
 export function xmlHandler( clipBoard ){
@@ -451,7 +455,7 @@ function isVisible( state ){
 
 /* *  ***********  Case Rules ************* * */
 
-Rule.DB.caseRules = Rule.DB.filter( rule => rule.owner === 'case' );
+Rule.DB.caseRules = Rule.DB.filter( rule => rule.owner === 'case' && ! rule.person );
 const caseDiv = document.querySelector('.case');
 
 if ( Rule.DB.caseRules.length === 0 ){
@@ -463,7 +467,6 @@ if ( Rule.DB.caseRules.length === 0 ){
     newRule.value = Rule.DB.valueFromAllRulesOf( '${' + caseRule + '}$' );
     newRule.toCaseRow( false, caseRule, Rule.headerOptions('case') );
   }
-  Rule.DB.store();  // add case rules to localStorage
 }
 
 /* *  ***********  Case Data Editor ************* * */
