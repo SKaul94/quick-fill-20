@@ -255,7 +255,7 @@ firstElementWithClass('reset')?.addEventListener('click', event => {
       localStorage.removeItem( config.autocompleteIdentifier );
     }
   }
-  // location.reload();
+  location.reload();
 });
 
 firstElementWithClass('save')?.addEventListener('click', event => {
@@ -433,7 +433,7 @@ async function switchToState( state ){
       }
       break;
     case 'app':
-      PdfDoc.updateAll();
+      await PdfDoc.updateAll();
       break;
     case 'profile':
       Rule.DB.updateAllFields();
@@ -709,12 +709,12 @@ document.querySelector('#rule_pretty_print>h2').addEventListener('click', event 
     const h3 = document.createElement('h3');
     h3.innerHTML = owner;
     prettyPrintDiv.appendChild( h3 );
-    const ul = document.createElement('ul');
-    prettyPrintDiv.appendChild( ul );
+    const ol = document.createElement('ol');
+    prettyPrintDiv.appendChild( ol );
     for ( const rule of Rule.DB.filter( r => r.owner === owner ) ){
       const li = document.createElement('li');
       li.innerHTML = rule.prettyPrint();
-      ul.appendChild( li );
+      ol.appendChild( li );
     }
   }
   window.scrollBy(0, window.innerHeight / 3);
