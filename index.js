@@ -10,13 +10,14 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, addCollapseIcons} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
 import {PdfDoc} from './lib/Doc.js';
 import {Keyboard} from './lib/simple-keyboard-index.modern.es6.js';
 import {ProfileEditor} from "./lib/ProfileEditor.js";
+import {TemplateEditor} from "./lib/TemplateEditor.js";
 import {CaseEditor} from "./lib/CaseEditor.js";
 import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
@@ -32,10 +33,7 @@ import * as Idb from './lib/idb-keyval.js';
 export const titleElement = document.getElementById('title');
 titleElement.innerText += ` ${config.version}`;
 
-// save dynamic rules, before being lost by converting config to JSON 
-Rule.DynamicRules = config.dynamicRules;
-
-// QuickFill Statistics
+// init QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
 
 /* *  ***********  enhance object inspection for debugging only ************* * */
@@ -204,7 +202,7 @@ function pdfAllLoader(){
   };
 }
 
-function pdfLoader(){
+export function pdfLoader(){
   return async event => {
       event.stopImmediatePropagation();
 
@@ -243,26 +241,88 @@ function pdfLoader(){
 
 }
 
-firstElementWithClass('reset')?.addEventListener('click', event => {
+export const configResetHandler = async event => {
   if ( confirm('Wollen Sie alle Regeln und Textbausteine auf den Anfangszustand zurücksetzen?') ){
-    localStorage.removeItem( config.profileIdentifier );
-    localStorage.removeItem( config.autocompleteIdentifier );
-  } else {
-    if ( confirm('Wollen Sie nur die Regeln auf den Anfangszustand zurücksetzen?') ){
-      localStorage.removeItem( config.profileIdentifier );
-    }
-    if ( confirm('Wollen Sie nur die Textbausteine auf den Anfangszustand zurücksetzen?') ){
-      localStorage.removeItem( config.autocompleteIdentifier );
-    }
+    Idb.del(config.configIdentifier);
   }
-  location.reload();
-});
+  location.reload();  // loading module config.js automatically
+  // config.js is the initial state, to which QuickFill returns via Reset
+};
 
-firstElementWithClass('save')?.addEventListener('click', event => {
-  localStorage.setItem( config.profileIdentifier, JSON.stringify( Rule.DB.sortedRules() ) );
-  localStorage.setItem( config.autocompleteIdentifier, JSON.stringify( config.autocompleteDict ) );
-  alert('Fertig gespeichert.');
-});
+export const saveInitialLists = async ({silent}) => {
+  try {
+    await Idb.set(config.configIdentifier, jsonStringifyWithFunctions( config ) );
+    const successMessage = 'Im Browser persistent gespeichert. Um auf den Anfangszustand zurückzugehen: Reset.';
+    if ( silent ) console.log( successMessage ); else alert( successMessage );
+  } catch (error) {
+    const failureMessage = 'Konnte leider nicht im Browser gespeichert werden.';
+    if ( silent ) console.log( failureMessage ); else alert( failureMessage );
+    console.error( error );
+    debugger;
+  }
+};
+
+export const configSaveHandler = async event => {
+  ProfileEditor.updateConfig( config );
+  saveInitialLists({silent: false});
+};
+
+export const configSilentSaveHandler = async event => {
+  ProfileEditor.updateConfig( config );
+  saveInitialLists({silent: true});
+};
+
+export const configImportHandler = async event => {
+  const fileHandle = await fileOpen( {
+    // List of allowed MIME types, defaults to `*/*`.
+    mimeTypes: ['application/json'],
+    // List of allowed file extensions (with leading '.'), defaults to `''`.
+    extensions: [ '.json', '.txt' ],
+    // Set to `true` for allowing multiple files, defaults to `false`.
+    multiple: false,
+    // Textual description for file dialog , defaults to `''`.
+    description: 'QuickFill Configuration',
+    // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+    startIn: 'downloads',
+    // By specifying an ID, the user agent can remember different directories for different IDs.
+    id: 'config',
+    // Include an option to not apply any filter in the file picker, defaults to `false`.
+    excludeAcceptAllOption: false,
+  } );
+  const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
+  const fileContents = await file.text();
+  const quickFillConfig = jsonParseWithFunctions( fileContents );
+  Idb.set(config.configIdentifier, jsonStringifyWithFunctions( quickFillConfig ) );
+  location.reload();  // loading quickFillConfig from IndexedDB automatically
+  // Object.assign( config, quickFillConfig );
+  // for (const profileEditor of ProfileEditor.all){
+  //   profileEditor.update();
+  // }
+  
+};
+
+export const configExportHandler = event => {
+  ProfileEditor.updateConfig( config );
+  const json = jsonStringifyWithFunctions( config );
+  const blob = new Blob([json], {type: "application/json"});
+  fileSave( blob, {
+    // Suggested file name to use, defaults to `''`.
+    fileName: 'config.json',
+    // Suggested file extensions (with leading '.'), defaults to `''`.
+    extensions: ['.json'],
+    // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+    startIn: 'downloads',
+    // By specifying an ID, the user agent can remember different directories for different IDs.
+    id: 'config',
+    // Include an option to not apply any filter in the file picker, defaults to `false`.
+    excludeAcceptAllOption: false,
+  });
+};
+
+firstElementWithClass('reset')?.addEventListener('click', configResetHandler );
+firstElementWithClass('save')?.addEventListener('click', configSaveHandler );
+firstElementWithClass('import')?.addEventListener('click', configImportHandler );
+firstElementWithClass('export')?.addEventListener('click', configExportHandler );
 
 export function xmlHandler( clipBoard ){
   return async event => {
@@ -347,10 +407,12 @@ export async function addSinglePDF( params ){
 
 /* *  ***********  Profile Editors ************* * */
 
+// convert rule specs from config into Rules and load them into the Rule Database:
 Rule.DB.load();
 if ( config.profileEditors ){
   for ( const profileEditorSpec of config.profileEditors ){
-    const profileEditor = new ProfileEditor( profileEditorSpec );
+    if ( ! profileEditorSpec.owner ) profileEditorSpec.owner = profileEditorSpec.name;
+    const profileEditor = profileEditorSpec.owner === 'template' ? new TemplateEditor( profileEditorSpec ): new ProfileEditor( profileEditorSpec );
     profileEditor.render();
   }
 }
@@ -367,6 +429,29 @@ firstElementWithClass('clear')?.addEventListener('click', event => {
   if ( confirm('Wollen Sie wirklich alle Ihre eigenen Textbausteine löschen?') ){
     textBlockEditor.removeAll();
   }
+});
+
+/**
+ * @summary set dark mode iff parameter is true
+ * @param {Boolean} DarkMode
+ * @link https://dev.to/ananyaneogi/create-a-dark-light-mode-switch-with-css-variables-34l8 
+ */
+export const setDarkMode = ( DarkMode ) => {
+  if ( DarkMode ){
+    document.body.style['color'] = 'white';
+    document.body.style['background-color'] = 'black';
+  } else {
+    document.body.style['color'] = 'black';
+    document.body.style['background-color'] = 'white';
+  }
+}
+
+setDarkMode( localStorage.getItem('DarkMode') === 'true' );
+
+document.getElementById('dark_button')?.addEventListener('click', event => {
+  const DarkMode = localStorage.getItem('DarkMode') !== 'true';
+  setDarkMode( DarkMode );
+  localStorage.setItem('DarkMode', DarkMode);
 });
 
 /* *  ***********  SPA Router: switch between SPA states ************* * */
@@ -402,7 +487,7 @@ async function switchToState( state ){
   for ( const showElement of document.querySelectorAll( '.' + state ) ){
     showElement.classList.remove('hide');
   }
-  const all_loaded_pdfs = await Idb.keys();
+  const all_loaded_pdfs = (await Idb.keys()).filter( key => key.includes('_') );
   const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
   switch ( state ){
     case 'pdf_loader':
@@ -493,6 +578,7 @@ const addTextInput = ( content ) => {
 /* *  ***********  add keyboard to both, app and profile  ************* * */
 makeKeyboard('app-keyboard', config.appKeyboardLayout );
 makeKeyboard('profile-keyboard', config.profileKeyboardLayout );
+makeKeyboard('xml-keyboard', config.xmlKeyboardLayout );
 
 function makeKeyboard( aClassSelector, layout ){
   const keyboard = new Keyboard('.'+aClassSelector, {
@@ -726,7 +812,7 @@ document.querySelector('#rule_pretty_print>h2').addEventListener('click', event 
 
 document.querySelector('#config_editor>h2').addEventListener('click', event => {
   const configEditorDiv = document.querySelector('#config_editor > div');
-  const config_json = JSON.stringify( config, null, 2 );
+  const config_json = jsonStringifyWithFunctions( config, 2 );
   configEditorDiv.innerHTML = `<div contenteditable>
       <pre>${config_json}</pre>
       </div>
@@ -739,68 +825,19 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
 
   configEditorContents.addEventListener('blur', event => {
     const config_json = configEditorContents.innerText;
-    try {
-      const newConfig = JSON.parse( config_json );
-      Object.assign( config, newConfig );
-      localStorage.setItem( config.configIdentifier, config_json );
-      Rule.DB.load();
-      for ( const profileEditor of ProfileEditor.all ){
-        profileEditor.update();
-      }
-      // location.reload();
-    } catch (e) {
-      alert(e);
+    const newConfig = jsonParseWithFunctions( config_json );
+    Object.assign( config, newConfig );
+    Idb.set( 'quickFillConfig', config );
+    Rule.DB.load();
+    for ( const profileEditor of ProfileEditor.all ){
+      profileEditor.update();
     }
+    // location.reload();
   } );
 
-  importButton.addEventListener('click', async event => {
-    event.stopPropagation();
-    const fileHandle = await fileOpen( {
-      // List of allowed MIME types, defaults to `*/*`.
-      mimeTypes: ['text/javascript', 'application/json'],
-      // List of allowed file extensions (with leading '.'), defaults to `''`.
-      extensions: [ '.js', '.txt', '.json' ],
-      // Set to `true` for allowing multiple files, defaults to `false`.
-      multiple: false,
-      // Textual description for file dialog , defaults to `''`.
-      description: 'QuickFill-Konfiguration',
-      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
-      startIn: 'downloads',
-      // By specifying an ID, the user agent can remember different directories for different IDs.
-      id: 'config',
-      // Include an option to not apply any filter in the file picker, defaults to `false`.
-      excludeAcceptAllOption: false,
-    } );
-    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
-    const fileContents = await file.text();
-    configEditorContents.innerText = fileContents.trim();
-    try {
-      const newConfig = JSON.parse( fileContents );
-      Object.assign( config, newConfig );
-      localStorage.setItem( config.configIdentifier, JSON.stringify( config ) );
-      // location.reload();
-    } catch (e) {
-      alert(e);
-    }
-  });
+  importButton.addEventListener('click', configImportHandler );
 
-  exportButton.addEventListener('click', event => {
-    event.stopPropagation();
-    const json = JSON.stringify( config, null, 2 );
-    const blob = new Blob([json], {type: "application/json"});
-    fileSave( blob, {
-      // Suggested file name to use, defaults to `''`.
-      fileName: 'config.json',
-      // Suggested file extensions (with leading '.'), defaults to `''`.
-      extensions: ['.json'],
-      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
-      startIn: 'downloads',
-      // By specifying an ID, the user agent can remember different directories for different IDs.
-      id: 'config',
-      // Include an option to not apply any filter in the file picker, defaults to `false`.
-      excludeAcceptAllOption: false,
-    });
-  });
+  exportButton.addEventListener('click', configExportHandler );
   
   window.scrollBy(0, window.innerHeight / 3);
   configEditorDiv.focus();

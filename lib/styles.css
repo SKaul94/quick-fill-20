@@ -3,6 +3,13 @@ html * {
   font-family: Arial, sans-serif;
 }
 
+/* dark mode 
+body {
+  color: white;
+  background-color: black;
+}
+*/
+
 .center {
   text-align: center;
 }
@@ -45,6 +52,7 @@ object, iframe {
 }
 
 table * {
+  color: black;
   font-family: Arial, sans-serif;
 }
 
@@ -230,6 +238,10 @@ button:active, .up:active, .down:active, #select-flag:active {
   background-color: #e8b0b0;
 }
 
+.template {
+  background-color: #d6b062;
+}
+
 .textblock {
   background-color: #FFEC9E;
 }
@@ -361,6 +373,7 @@ ul.menu {
 }
 
 ul.menu > li {
+  color: black;
   flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
   border-radius: 6px;
   background-color: lightgrey;
@@ -381,5 +394,11 @@ ul.menu > li:hover {
   flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
   background-color: white;
   border-color: black;
+  cursor: pointer;
+}
+
+a:hover {
+  color: black;
+  background-color: white;
   cursor: pointer;
 }

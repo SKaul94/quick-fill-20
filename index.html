@@ -31,10 +31,16 @@
   <button id="app_button" class="pdf_loader profile xml help hide" title="Allgemeine App für beliebige Fälle">App</button>
   <button id="xml_button" class="pdf_loader app profile help hide" title="Mittels XML-Import serienweise PDFs ausfüllen">XML</button>
   <button id="pdf_loader_button" class="app xml profile help hide" title="PDF-Formulare auf Vorrat öffnen und im Browser merken">PDF</button>
+  <span title="Dark Mode">
+  <svg id="dark_button" class="clickable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 10 10">
+    <path style="stroke-miterlimit: 8; stroke: rgb(0, 0, 0); stroke-width: 13.9018px; fill: rgb(255, 255, 255);" transform="matrix(0.02205, 0.00001, -0.00001, 0.02111, -5.48155, -1.74037)" d="M 480 530.6 A 212.5 212.5 0 0 1 480.4 105.6 L 480.4 318.1 Z" bx:shape="pie 480.4 318.1 0 212.5 180.1 360 1@9003e98d"/>
+    <path style="stroke-miterlimit: 8; stroke: rgb(0, 0, 0); stroke-width: 14.4127px;" transform="matrix(-0.02052, -0.00001, -0.00001, 0.02111, 15.10415, -1.71708)" d="M 480 530.6 A 212.5 212.5 0 0 1 480.4 105.6 L 480.4 318.1 Z" bx:shape="pie 480.4 318.1 0 212.5 180.1 360 1@9003e98d"/>
+  </svg></span>
+  <span title="Hilfe">
   <svg id="help_button" class="clickable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
     <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
-  </svg>
+  </svg></span>
 </div>
 <h1 id="title" class="shadow-font">QuickFill</h1>
 <div class="app hide">
@@ -96,14 +102,16 @@
 <!-- Buttons in the profile view have class profile-->
 <button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
 <button class="clear profile hide" title="Komplett Leeren: Lösche alle Regeln, alle Textbausteine">Clear</button>
-<button class="save profile hide" title="Speicher alle Regeln, alle Textbausteine">Save</button>
+<button class="save profile hide" title="Speicher alle Regeln, alle Textbausteine im Browser">Save</button>
+<button class="import profile hide" title="Lade die gesamte Konfiguration aus lokaler Datei">Import</button>
+<button class="export profile hide" title="Speicher die gesamte Konfiguration als lokale Datei">Export</button>
 
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
 <div id="xml_analyse" class="xml xml_analyse hide">
   <h1 class="shadow-font center">XML laden und PDFs automatisch ausfüllen <button class="keyboard" title="Öffne virtuelle Tastatur mit Sonderzeichen">Sonderzeichen</button></h1>
   <div class="keyboard-container hide">
-    <div class="profile-keyboard"></div>
+    <div class="xml-keyboard"></div>
   </div>
   <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Allgemeine Sprache:</label> 
   <select name="language" id="language_selector" class="language_selector">
@@ -180,18 +188,6 @@
     </div>
   </div>
 </div>
-
-<template id="personal_data_template">
-  <hr class="spacy">
-  <div class="person editor">
-    <h3 class="center shadow-font">Zusätzliche Daten zur Person</h3>
-    <div class="rules_area"></div>
-    <button class="clear right">Clear</button>
-    <button class="import right">Import</button>
-    <button class="export right">Export</button>
-    <button class="learn right">Lerne Regeln aus fertig ausgefüllten Formularen</button>
-  </div>
-</template>
 
 <div class="app all_results"></div>
 
@@ -312,11 +308,12 @@
           <th class="nr">Nr</th>
           <th class="del"></th>
       -->
-      <th>Bezeichner</th>
-      <th>Wert</th>
+      <th class="rule">Bezeichner</th>
+      <th class="value">Wert</th>
+      <th class="del"></th>
     </tr>
     <tr class="plus_row hide" title="Neue Regel hinzufügen">
-      <td colspan="2"> <!-- equals total number of columns -->
+      <td colspan="3"> <!-- equals total number of columns -->
         <button class="plus" title="Zeile hinzufügen">+</button>
         <button class="clear right" title="alle Werte in dieser Tabelle löschen">Leer</button>
         <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
@@ -326,18 +323,31 @@
   </table>
 </template>
 
+<!-- Framing the PersonEditor -->
+<template id="personal_data_template">
+  <hr class="spacy">
+  <div class="person editor"><!-- root for PersonEditor -->
+    <h3 class="center shadow-font">Zusätzliche Daten zur Person</h3>
+    <div class="rules_area"></div>
+    <button class="clear right">Clear</button>
+    <button class="import right">Import</button>
+    <button class="export right">Export</button>
+    <button class="learn right">Lerne Regeln aus fertig ausgefüllten Formularen</button>
+  </div>
+</template>
+
+<!-- PersonEditor template -->
 <template id="person_template">
   <p class="left title">Dateneingabe unter Wert</p>
   <table class="rule_table">
     <tr>
       <th class="nr">Nr</th>
-      <th class="typ">Typ</th>
       <th>Bezeichner</th>
       <th class="value">Wert</th>
       <th class="del"></th>
     </tr>
     <tr class="plus_row hide" title="Neue Regel hinzufügen">
-      <td colspan="5"> <!-- equals total number of columns -->
+      <td colspan="4"> <!-- equals total number of columns -->
         <button class="plus" title="Zeile hinzufügen">+</button>
         <button class="clear right" title="alle Werte in dieser Tabelle löschen">Leer</button>
         <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
@@ -347,6 +357,26 @@
   </table>
 </template>
 
+<!-- TemplateEditor template -->
+<template id="template_template">
+  <p class="left title">Welche Regeln sollen je Person erscheinen?</p>
+  <table class="rule_table">
+    <tr>
+      <th>Bezeichner</th>
+      <th class="value">Wert</th>
+      <th class="del"></th>
+    </tr>
+    <tr class="plus_row hide" title="Neue Regel hinzufügen">
+      <td colspan="3"> <!-- equals total number of columns -->
+        <button class="plus" title="Zeile hinzufügen">+</button>
+        <button class="prefill right hide" title="Dummy-Werte eintragen">Prefill</button>
+        <button class="eval right hide" title="Werte neu berechnen">Eval</button>
+      </td>
+    </tr>
+  </table>
+</template>
+
+<!-- TextBlockEditor template -->
 <template id="textblock_template">
   <p class="left title">Texteingabe</p>
   <table class="rule_table">
