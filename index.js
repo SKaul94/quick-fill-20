@@ -30,8 +30,15 @@ import * as Idb from './lib/idb-keyval.js';
 
 /* * *********** config ************* * */
 
-export const titleElement = document.getElementById('title');
-titleElement.innerText += ` ${config.version}`;
+const configVersionElement = document.querySelector('#title > .config_version');
+configVersionElement.innerText = config.version;
+
+export const configIncrement = _ => {
+  const [ major, minor ] = config.version.split('.');
+  const next = parseInt(minor) + 1;
+  config.version = `${major}.${next}`;
+  configVersionElement.innerText = config.version;
+};
 
 // init QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
@@ -251,6 +258,7 @@ export const configResetHandler = async event => {
 
 export const saveInitialLists = async ({silent}) => {
   try {
+    configIncrement();
     await Idb.set(config.configIdentifier, jsonStringifyWithFunctions( config ) );
     const successMessage = 'Im Browser persistent gespeichert. Um auf den Anfangszustand zurückzugehen: Reset.';
     if ( silent ) console.log( successMessage ); else alert( successMessage );
