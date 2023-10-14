@@ -29,11 +29,12 @@
   },
   "homepage": "https://skaul94.github.io/quick-fill-20/",
   "dependencies": {
+    "@material/mwc-switch": "^0.27.0",
     "browser-fs-access": "^0.25.0",
-    "simple-keyboard": "^3.4.65",
-    "simple-keyboard-layouts": "^3.1.69",
     "idb-keyval": "^6.2.1",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "simple-keyboard": "^3.4.65",
+    "simple-keyboard-layouts": "^3.1.69"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",

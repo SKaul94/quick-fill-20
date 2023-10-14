@@ -100,11 +100,13 @@
 
 
 <!-- Buttons in the profile view have class profile-->
-<button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
-<button class="clear profile hide" title="Komplett Leeren: Lösche alle Regeln, alle Textbausteine">Clear</button>
 <button class="save profile hide" title="Speicher alle Regeln, alle Textbausteine im Browser">Save</button>
 <button class="import profile hide" title="Lade die gesamte Konfiguration aus lokaler Datei">Import</button>
 <button class="export profile hide" title="Speicher die gesamte Konfiguration als lokale Datei">Export</button>
+<button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
+<mwc-formfield class="drag_switch_label profile hide" label="Drag and Drop">
+  <mwc-switch id="drag_switch" selected></mwc-switch>
+</mwc-formfield>
 
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>

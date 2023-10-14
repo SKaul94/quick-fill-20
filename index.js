@@ -23,6 +23,8 @@ import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
 import * as Idb from './lib/idb-keyval.js';
+// Material Design
+import * as MWC from './lib/mwc.min.js';
 
 // Additional imports for adding other fonts:
 // import {fontkit} from './lib/fontkit.es.js';
@@ -42,6 +44,18 @@ export const configIncrement = _ => {
 
 // init QuickFill Statistics
 globalThis[ 'QuickFillStatistics' ] = {};
+
+// switch drag and drop
+const dragAndDropSwitch = document.getElementById('drag_switch');
+// initial state is unchecked
+// dragAndDropSwitch.checked = false;
+export const switchDragAndDrop = event => {
+  for ( const draggable of document.querySelectorAll('[draggable]') ){
+    draggable.setAttribute('draggable', ! dragAndDropSwitch.checked );
+  }
+}
+dragAndDropSwitch.addEventListener('click', switchDragAndDrop);
+
 
 /* *  ***********  enhance object inspection for debugging only ************* * */
 if ( config.debug ) Object.prototype.allPropFun = function(){
@@ -427,17 +441,6 @@ if ( config.profileEditors ){
 
 /* *  ***********  Textblock Editor ************* * */
 const textBlockEditor = new TextBlockEditor( {root: 'profile_area', title: 'Kürzel und Textbausteine eingeben', plus_row: true }, );
-
-// add listener to top clear button in the header of the profile area
-firstElementWithClass('clear')?.addEventListener('click', event => {
-  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Regeln löschen?') ){
-    Rule.DB.removeAll( rule => true );
-    // PVB-Editor add plus row
-  }
-  if ( confirm('Wollen Sie wirklich alle Ihre eigenen Textbausteine löschen?') ){
-    textBlockEditor.removeAll();
-  }
-});
 
 /**
  * @summary set dark mode iff parameter is true
