@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <title>QuickFill 2.0</title>
+  <title>QuickFill 2.0</span></title>
   <!--
     * @module index.html
     * @summary main HTML document
@@ -42,7 +42,7 @@
     <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
   </svg></span>
 </div>
-<h1 id="title" class="shadow-font">QuickFill <span class="config_version"></span></h1>
+<h1 id="title" class="shadow-font">QuickFill <span id="config_version_header"></span></h1>
 <div class="app hide">
   <h1 class="shadow-font center">Sonderfälle</h1>
   <span id="select-flag" class="hide"> <!-- Flag and Language Chooser. SVG icons from https://github.com/lipis/flag-icons/tree/main/flags/4x3, install via npm i flag-icons, add title and class="hide"-->
@@ -104,10 +104,14 @@
 <button class="import profile hide" title="Lade die gesamte Konfiguration aus lokaler Datei">Import</button>
 <button class="export profile hide" title="Speicher die gesamte Konfiguration als lokale Datei">Export</button>
 <button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
-<mwc-formfield class="drag_switch_label profile hide" label="Drag and Drop">
-  <mwc-switch id="drag_switch" selected></mwc-switch>
-</mwc-formfield>
-
+<label for="drag_switch" title="Reihenfolge der Regeln durch Verschieben">
+  <input id="drag_switch" type="checkbox">Drag and Drop
+</label>
+<!--
+  <mwc-formfield class="drag_switch_label profile hide" label="Drag and Drop" title="Reihenfolge der Regeln durch Verschieben">
+    <mwc-switch id="drag_switch"></mwc-switch>
+  </mwc-formfield>
+-->
 <div class="error hide"></div>
 <div id="xml_area" class="app hide"></div>
 <div id="xml_analyse" class="xml xml_analyse hide">

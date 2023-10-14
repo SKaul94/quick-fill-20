@@ -24,7 +24,7 @@ import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
 import * as Idb from './lib/idb-keyval.js';
 // Material Design
-import * as MWC from './lib/mwc.min.js';
+// import * as MWC from './lib/mwc.min.js';
 
 // Additional imports for adding other fonts:
 // import {fontkit} from './lib/fontkit.es.js';
@@ -32,14 +32,16 @@ import * as MWC from './lib/mwc.min.js';
 
 /* * *********** config ************* * */
 
-const configVersionElement = document.querySelector('#title > .config_version');
-configVersionElement.innerText = config.version;
+document.title = `QuickFill ${config.version}`;
+const configVersionHeader = document.getElementById('config_version_header');
+configVersionHeader.innerText = config.version;
 
 export const configIncrement = _ => {
   const [ major, minor ] = config.version.split('.');
   const next = parseInt(minor) + 1;
   config.version = `${major}.${next}`;
-  configVersionElement.innerText = config.version;
+  document.title = `QuickFill ${config.version}`;
+  configVersionHeader.innerText = config.version;
 };
 
 // init QuickFill Statistics
@@ -51,7 +53,7 @@ const dragAndDropSwitch = document.getElementById('drag_switch');
 // dragAndDropSwitch.checked = false;
 export const switchDragAndDrop = event => {
   for ( const draggable of document.querySelectorAll('[draggable]') ){
-    draggable.setAttribute('draggable', ! dragAndDropSwitch.checked );
+    draggable.setAttribute('draggable', dragAndDropSwitch.checked );
   }
 }
 dragAndDropSwitch.addEventListener('click', switchDragAndDrop);
@@ -450,7 +452,7 @@ const textBlockEditor = new TextBlockEditor( {root: 'profile_area', title: 'Kür
 export const setDarkMode = ( DarkMode ) => {
   if ( DarkMode ){
     document.body.style['color'] = 'white';
-    document.body.style['background-color'] = 'black';
+    document.body.style['background-color'] = '#282828';  // almost black
   } else {
     document.body.style['color'] = 'black';
     document.body.style['background-color'] = 'white';
