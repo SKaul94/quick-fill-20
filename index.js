@@ -531,6 +531,7 @@ async function switchToState( state ){
       }
       break;
     case 'app':
+      CaseEditor.instance.update();
       await PdfDoc.updateAll();
       break;
     case 'profile':
