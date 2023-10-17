@@ -287,12 +287,12 @@ export const saveInitialLists = async ({silent}) => {
 };
 
 export const configSaveHandler = async event => {
-  ProfileEditor.updateConfig( config );
+  ProfileEditor.updateConfig();
   saveInitialLists({silent: false});
 };
 
 export const configSilentSaveHandler = async event => {
-  ProfileEditor.updateConfig( config );
+  ProfileEditor.updateConfig();
   saveInitialLists({silent: true});
 };
 
@@ -326,7 +326,7 @@ export const configImportHandler = async event => {
 };
 
 export const configExportHandler = event => {
-  ProfileEditor.updateConfig( config );
+  ProfileEditor.updateConfig();
   const json = jsonStringifyWithFunctions( config );
   const blob = new Blob([json], {type: "application/json"});
   fileSave( blob, {
@@ -531,7 +531,7 @@ async function switchToState( state ){
       }
       break;
     case 'app':
-      CaseEditor.instance.update();
+      CaseEditor.instance?.update();
       await PdfDoc.updateAll();
       break;
     case 'profile':
@@ -552,28 +552,11 @@ function isVisible( state ){
   return true;
 }
 
-/* *  ***********  Case Rules ************* * */
-
-Rule.DB.caseRules = Rule.DB.filter( rule => rule.owner === 'case' && ! rule.person );
-const caseDiv = document.querySelector('.case');
-
-if ( Rule.DB.caseRules.length === 0 ){
-  // generating case rules from config, only if there are no case rules in localStorage
-  for ( const caseRule of config.caseRules || [] ){
-    // no duplicates // ToDo if ( Rule.DB.getRuleByKey( caseRule ) ) continue;
-    // if ( Array.from( caseDiv.querySelectorAll('td.rule') ).find( td => td.innerText === caseRule ) ) debugger;
-    const newRule = new Rule({rule: caseRule, rule_type: 'equal', owner: 'case' });
-    newRule.value = Rule.DB.valueFromAllRulesOf( '${' + caseRule + '}$' );
-    newRule.toCaseRow( false, caseRule, Rule.headerOptions('case') );
-  }
-}
-
 /* *  ***********  Case Data Editor ************* * */
 
+const caseDiv = document.querySelector('.case');
 const caseEditor = new CaseEditor( { root: 'app_area', title: 'Dateneingabe unter Wert', plus_row: true } );
-
 if ( ! caseDiv.querySelector('[autofocus]') ) caseDiv.querySelector('[contenteditable]')?.setAttribute('autofocus', 'true');
-
 if ( config.prefill ) document.querySelector('.prefill').classList.remove('hide');
 
 /* *  ***********  Keyboard ************* * */
