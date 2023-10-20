@@ -287,12 +287,12 @@ export const saveInitialLists = async ({silent}) => {
 };
 
 export const configSaveHandler = async event => {
-  ProfileEditor.updateConfig();
+  ProfileEditor.updateConfig({});
   saveInitialLists({silent: false});
 };
 
 export const configSilentSaveHandler = async event => {
-  ProfileEditor.updateConfig();
+  ProfileEditor.updateConfig({});
   saveInitialLists({silent: true});
 };
 
@@ -326,7 +326,7 @@ export const configImportHandler = async event => {
 };
 
 export const configExportHandler = event => {
-  ProfileEditor.updateConfig();
+  ProfileEditor.updateConfig({});
   const json = jsonStringifyWithFunctions( config );
   const blob = new Blob([json], {type: "application/json"});
   fileSave( blob, {
