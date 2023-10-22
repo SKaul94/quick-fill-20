@@ -380,26 +380,48 @@ ul.menu {
 ul.menu > li {
   color: black;
   flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
-  border-radius: 6px;
-  background-color: lightgrey;
-  box-shadow: 4px 4px 3px 0 #777777;
+  border-radius: 4px;
+  background-color: lightseagreen;
   padding: 0.3rem;
-  margin-top: 0.3rem;
-  margin-right: 0.3rem;
+  margin-top: 0.5rem;
+  margin-right: 0.2rem;
   text-align: center;
-  border: thin solid;
+  border: 2px solid;
   border-color: white black black white;
+}
+
+ul.menu.submenu {
+  justify-content: flex-start;
+}
+
+ul.menu.submenu > li {
+  background-color: sandybrown;
+  flex: 0 1 auto;
 }
 
 ul.menu > li.active {
   background-color: lightcoral;
+  border-color: black white white black;
+  box-shadow: none;
 }
 
 ul.menu > li:hover {
   flex-grow: 1; /* ... if you want the <li>s to grow and fill all space */
   background-color: white;
-  border-color: black;
+  border-color: white;
   cursor: pointer;
+}
+
+ul.menu.submenu > li:hover {
+  flex: 0 1 auto;
+  background-color: white;
+  border-color: black white white black;
+  cursor: pointer;
+}
+
+.selected_content {
+  border: thick solid;
+  border-color: white;
 }
 
 a:hover {

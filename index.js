@@ -251,7 +251,10 @@ export function pdfLoader(){
     // store binary in IndexedDB:
     const kindOfPDF = pdfFile.name.split('-')[1];
     const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
-    const key = `${kindOfPDF}_${language}`;
+    const pdfFileNameComponents = pdfFile.name.split('.');
+    pdfFileNameComponents.pop();
+    // key serves (1.) as index into IndexedDB and (2.) as class name in HTML. Therefore no special chars allowed 
+    const key = kindOfPDF && language ? `${kindOfPDF}_${language}` : pdfFileNameComponents.join('_');
 
     if ( ! await Idb.get(key) ) {
       await Idb.set(key, new Uint8Array( await pdfFile.arrayBuffer() ));
