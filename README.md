@@ -15,11 +15,20 @@ cd pdf.js
 npm install
 gulp generic # generates build directory
 gulp dist-install # generates distribution files and dist
-gulp minified # generates new directory with minified files
+# gulp minified # optional: generate new directory with minified files
 cp -ipr ./build/generic/* ../quick-fill-20 # copies relevant files into QuickFill Directory
 ```
 
 Otherwise simply use "pdfjs-dist": "^3.9.179" in dependencies in package.json.
+
+## PDF.js Issue #16723
+`textContent` has the stored user's value and `fieldFormattedValues` look to has the default value, you can see that `fieldFormattedValues` has more precedence than `textContent`.
+Because of PDF.js Issue [Acroform Textfield doesn't set the stored user's value in the html element if it has a default value #16723](https://github.com/mozilla/pdf.js/issues/16723) the file `src/display/annotation_layer.js` line 1217 has to be preceded by the following line:
+```javascript
+// if `textContent` has user's value `fieldFormattedValues` isn't needed
+fieldFormattedValues = textContent ? null : fieldFormattedValues
+```
+Otherwise when the blur event is dispatched, textfield restores to default value because fieldFormattedValues has the default value.
 
 ## Copy into one large HTML file and minify 
 ```shell
