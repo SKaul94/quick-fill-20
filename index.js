@@ -564,15 +564,45 @@ if ( config.prefill ) document.querySelector('.prefill').classList.remove('hide'
 
 /* *  ***********  Keyboard ************* * */
 
+let lastFocusElement;
 const addTextInput = ( content ) => {
-  if ( Rule.lastActiveRow ){
-    Rule.lastActiveRow.querySelector('.value').innerText += content;
+  if ( document.activeElement ){
+    if ( document.activeElement.tagName === 'IFRAME' ){ // nested PDF viewer
+      lastFocusElement = document.activeElement.contentDocument.activeElement;
+      switch ( lastFocusElement.type ){
+        case 'text': case 'textarea':
+          lastFocusElement.value += content;
+          
+          break;
+        default:
+          console.assert(false, lastFocusElement.type);  
+      }
+    } else if ( document.activeElement.tagName === 'TD' ) {
+      document.activeElement.innerText += content;
+      // Rule.lastActiveRow = document.activeElement.parentElement;
+      lastFocusElement = document.activeElement;
+    }
+  } else if ( Rule.lastActiveRow && Rule.lastActiveRow.tagName === 'TR' ){
+    console.assert( false );
+    const valueElement = Rule.lastActiveRow.querySelector('.value');
+    if ( valueElement ){
+      valueElement.innerText += content;
+      lastFocusElement = valueElement;
+    }
+  } else if ( lastFocusElement ){
+    if ( lastFocusElement.tagName === 'TD' ){
+      lastFocusElement.innerText += content;
+    } else {
+      lastFocusElement.value += content;
+    }  
   } else {
     const valueInput = document.querySelector('.value');
-    valueInput.focus();
+    lastFocusElement = valueInput;
     valueInput.innerText += content;
-    Rule.lastActiveRow = valueInput.parentElement;
+    // Rule.lastActiveRow = valueInput.parentElement;
   }
+  // lastFocusElement.blur();
+  // lastFocusElement.focus();
 }
 
 /* *  ***********  add keyboard to both, app and profile  ************* * */
@@ -621,10 +651,10 @@ function makeKeyboard( aClassSelector, layout ){
           }
           break;
         case 'heute':
-          addTextInput( DynamicRules.heute() );
+          addTextInput( config.heute() );
           break;
         case 'jetzt':
-          addTextInput( DynamicRules.jetzt() );
+          addTextInput( config.jetzt() );
           break;
         default:
           const textBlock = config.textBlock[ button ];
@@ -643,7 +673,7 @@ function makeKeyboard( aClassSelector, layout ){
               console.assert( false, `Wrong type for text block "${button}".` );
           }
       }
-      Rule.refocus();
+      // Rule.refocus();
     }
   });
 }
