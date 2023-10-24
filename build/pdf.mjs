@@ -865,10 +865,10 @@ class TextAnnotationElement extends AnnotationElement {
     this.container.classList.add("textAnnotation");
     const image = document.createElement("img");
     image.src = this.imageResourcesPath + "annotation-" + this.data.name.toLowerCase() + ".svg";
-    image.dataset.l10nId = "pdfjs-text-annotation-type";
-    image.dataset.l10nArgs = JSON.stringify({
+    image.setAttribute("data-l10n-id", "pdfjs-text-annotation-type");
+    image.setAttribute("data-l10n-args", JSON.stringify({
       type: this.data.name
-    });
+    }));
     if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
     }
@@ -1032,6 +1032,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       if (fieldFormattedValues && this.data.comb) {
         fieldFormattedValues = fieldFormattedValues.replaceAll(/\s+/g, "");
       }
+      fieldFormattedValues = textContent ? null : fieldFormattedValues;
       const elementData = {
         userValue: textContent,
         formattedValue: fieldFormattedValues,
@@ -1841,11 +1842,11 @@ class PopupElement {
     if (this.#dateObj) {
       const modificationDate = document.createElement("span");
       modificationDate.classList.add("popupDate");
-      modificationDate.dataset.l10nId = "pdfjs-annotation-date-string";
-      modificationDate.dataset.l10nArgs = JSON.stringify({
+      modificationDate.setAttribute("data-l10n-id", "pdfjs-annotation-date-string");
+      modificationDate.setAttribute("data-l10n-args", JSON.stringify({
         date: this.#dateObj.toLocaleDateString(),
         time: this.#dateObj.toLocaleTimeString()
-      });
+      }));
       header.append(modificationDate);
     }
     const contentsObj = this.#contentsObj;
@@ -2368,14 +2369,12 @@ class AnnotationLayer {
     div,
     accessibilityManager,
     annotationCanvasMap,
-    l10n,
     page,
     viewport
   }) {
     this.div = div;
     this.#accessibilityManager = accessibilityManager;
     this.#annotationCanvasMap = annotationCanvasMap;
-    this.l10n = l10n;
     this.page = page;
     this.viewport = viewport;
     this.zIndex = 0;
@@ -2796,7 +2795,7 @@ function getDocument(src) {
   }
   const fetchDocParams = {
     docId,
-    apiVersion: '4.0.101',
+    apiVersion: '4.0.107',
     data,
     password,
     disableAutoFetch,
@@ -4523,8 +4522,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = '4.0.101';
-const build = '898cc2e39';
+const version = '4.0.107';
+const build = '377af6892';
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });
@@ -15378,8 +15377,8 @@ _display_api_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.t
 
 
 
-const pdfjsVersion = '4.0.101';
-const pdfjsBuild = '898cc2e39';
+const pdfjsVersion = '4.0.107';
+const pdfjsBuild = '377af6892';
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });
