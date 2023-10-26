@@ -20,7 +20,7 @@ globalThis[ 'localStorage' ] = { setItem, removeItem };
 function loadRules( rules ){
   Rule.DB.clear();
   for ( const rule of rules ){
-    new Rule( rule );
+    Rule.createNew( rule );
   }
 }
 

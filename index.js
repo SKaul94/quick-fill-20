@@ -168,11 +168,13 @@ firstElementWithClass('file_chooser')?.addEventListener('click', async event => 
 function updatePdfAndDB(){
   PdfDoc.updateAllFieldsArea();
   firstElementWithClass('save_all')?.classList.remove('hide');
+  firstElementWithClass('print_all')?.classList.remove('hide');
   // Rule.DB.updateAllFields();
   switchToState( 'app' );
 }
 
 firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListener );
+firstElementWithClass('print_all')?.addEventListener('click', PdfDoc.printAllListener );
 firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xmlHandler(true) );
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
 
@@ -517,6 +519,10 @@ async function switchToState( state ){
       }
       break;
     case 'xml':
+      if ( PdfDoc.all.length === 0 ){
+        firstElementWithClass('save_all').classList.add('hide');
+        firstElementWithClass('print_all').classList.add('hide');
+      }
       for ( const language_selector of document.querySelectorAll('.language_selector') ){
         language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
         for ( const language of allLanguages ){
@@ -749,7 +755,7 @@ export function importXML( textArea ){
       return oldRule;
     }
     if ( xmlData && xmlData.length > 0 && ! config.ignoreXMLFields.includes( rule ) ){
-      return new Rule({rule, value: xmlData, rule_type: 'superstring', owner: 'case' });
+      return Rule.createNew({rule, value: xmlData, rule_type: 'superstring', owner: 'case' });
 
       // caseDiv.querySelector('tbody').insertBefore(newRow, caseDiv.querySelector('tr.plus_row'));
       // newRule.installCaseListeners(); // withRuleEditing = false
@@ -873,3 +879,13 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   configEditorDiv.focus();
   
 } );
+
+/**
+ * Global Settings
+ */
+
+window.addEventListener("beforeunload", event =>{
+  for ( const pdfDoc of PdfDoc.all ){
+    pdfDoc.pdfViewerApplication.pdfDocument.annotationStorage.onResetModified();
+  }
+});

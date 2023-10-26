@@ -15,7 +15,7 @@ console.log( '=== ava testing rule engine ===' );
 function loadRules( rules ){
   Rule.DB.clear();
   for ( const rule of rules ){
-    new Rule( rule );  // implicit Rule.DB.addRule
+    Rule.createNew( rule );  // implicit Rule.DB.addRule
   }
 }
 
