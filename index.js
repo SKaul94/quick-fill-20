@@ -879,13 +879,3 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   configEditorDiv.focus();
   
 } );
-
-/**
- * Global Settings
- */
-
-window.addEventListener("beforeunload", event =>{
-  for ( const pdfDoc of PdfDoc.all ){
-    pdfDoc.pdfViewerApplication.pdfDocument.annotationStorage.onResetModified();
-  }
-});
