@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -506,7 +506,7 @@ async function switchToState( state ){
     showElement.classList.remove('hide');
   }
   const all_loaded_pdfs = (await Idb.keys()).filter( key => key.includes('_') );
-  const allLanguages = Array.from( new Set( all_loaded_pdfs.map( key => key.split('_')[1] ) ) );
+  const allLanguages = Array.from( new Set( all_loaded_pdfs.map( filename_language_mapper ) ) );
   switch ( state ){
     case 'pdf_loader':
       const list = firstElementWithClass('loaded_pdfs');
