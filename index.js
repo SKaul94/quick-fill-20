@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -321,7 +321,8 @@ export const configImportHandler = async event => {
   const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
   const fileContents = await file.text();
   const quickFillConfig = jsonParseWithFunctions( fileContents );
-  Idb.set(config.configIdentifier, jsonStringifyWithFunctions( quickFillConfig ) );
+  const mergedObjects = mergeObjects( config, quickFillConfig );
+  Idb.set(config.configIdentifier, jsonStringifyWithFunctions( mergedObjects ) );
   location.reload();  // loading quickFillConfig from IndexedDB automatically
   // Object.assign( config, quickFillConfig );
   // for (const profileEditor of ProfileEditor.all){
@@ -332,7 +333,7 @@ export const configImportHandler = async event => {
 
 export const configExportHandler = event => {
   ProfileEditor.updateConfig({});
-  const json = jsonStringifyWithFunctions( config );
+  const json = jsonStringifyWithFunctions( config, 2 );
   const blob = new Blob([json], {type: "application/json"});
   fileSave( blob, {
     // Suggested file name to use, defaults to `''`.
