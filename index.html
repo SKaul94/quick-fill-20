@@ -119,9 +119,13 @@
   <div class="keyboard-container hide">
     <div class="xml-keyboard"></div>
   </div>
-  <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Allgemeine Sprache:</label> 
+  <label class="bold" for="language_selector" title="Zuerst Sprache wählen, in der die Formulare erscheinen sollen.">Sprache:</label> 
   <select name="language" id="language_selector" class="language_selector">
     <option value="">--Bitte auswählen:--</option>
+  </select>
+  <select name="category" id="category_selector" class="category_selector">
+    <option value="refusal" selected="selected">Einreiseverweigerung</option>
+    <option value="asylum">Asylantrag</option>
   </select>
   <button class="interprete_xml_file xml" title="XML aus Datei einfügen und interpretieren" data-remember="XML">XML</button>
   <button class="save_all app xml" title="Alle ausgefüllten PDFs speichern">Alle speichern</button>
