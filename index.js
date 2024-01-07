@@ -183,6 +183,7 @@ firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('
 firstElementWithClass('load_all_pdf_asyl')?.addEventListener('click', pdfAllLoader() );
 firstElementWithClass('load_all_pdf_minder')?.addEventListener('click', pdfAllLoader() );
 firstElementWithClass('load_single_pdf')?.addEventListener('click', pdfLoader('other') );
+firstElementWithClass('load_all_pdf')?.addEventListener('click', pdfAllLoader() );
 
 firstElementWithClass('interprete_xml_file')?.addEventListener('click', function(event){
   const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
@@ -212,10 +213,11 @@ function pdfAllLoader(){
     for await (const entry of dirHandle.values()) {
       const pdfFile = entry instanceof File ? entry : await entry.getFile();
       if ( pdfFile.name?.match(/\(\d+\)/) ) continue;
+      if ( pdfFile.name?.slice(-4)?.toLowerCase() !== '.pdf' ) continue;
       const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
       const kindOfPDF = pdfFile.name.split('-')[1];
       const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
-      const key = `${kindOfPDF}_${language}`;
+      const key = kindOfPDF ? `${kindOfPDF}_${language}` : pdfFile.name.slice(0,-4);
 
       // store binary in IndexedDB:
       await Idb.set( key, pdfBinary );
