@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -222,7 +222,17 @@ function pdfAllLoader(){
       // store binary in IndexedDB:
       await Idb.set( key, pdfBinary );
       const li = document.createElement('li');
-      li.innerText = `${key} => ${pdfFile.name}`;
+      li.innerHTML = `${key} => ${pdfFile.name} `  + trashWhiteIconSVG;
+      const trashIcon = li.querySelector('svg');
+      trashIcon.addEventListener('click', event => {
+        if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
+          Idb.del( key );
+          li.remove();
+          if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
+            firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+          }
+        }
+      });
       firstElementWithClass('loaded_pdfs')?.appendChild(li);
       firstElementWithClass('null_item')?.remove();
     }
@@ -263,13 +273,30 @@ export function pdfLoader(){
     if ( ! await Idb.get(key) ) {
       await Idb.set(key, new Uint8Array( await pdfFile.arrayBuffer() ));
       const li = document.createElement('li');
-      li.innerText = `${key} => ${pdfFile.name}`;
+      li.innerHTML = `${key} => ${pdfFile.name} ` + trashWhiteIconSVG;
+      const trashIcon = li.querySelector('svg');
+      trashIcon.addEventListener('click', event => {
+        if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
+          Idb.del( key );
+          li.remove();
+          if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
+            firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+          }
+        }
+      });
       firstElementWithClass('loaded_pdfs')?.appendChild(li);
       firstElementWithClass('null_item')?.remove();
     }  
   };
 
 }
+
+firstElementWithClass('delete_pdfs').addEventListener('click', event => {
+  if ( confirm('Wollen Sie alle PDFs aus dem Browser entfernen?') ){
+    Idb.clear();
+    firstElementWithClass('delete_pdfs').parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+  }
+});
 
 export const configResetHandler = async event => {
   if ( confirm('Wollen Sie alle Regeln und Textbausteine auf den Anfangszustand zurücksetzen?') ){
@@ -516,7 +543,17 @@ async function switchToState( state ){
       list.innerHTML = `<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>`;
       for ( const pdf of all_loaded_pdfs ){
         const li = document.createElement('li');
-        li.innerText = pdf;
+        li.innerHTML = pdf + ' ' + trashWhiteIconSVG;
+        const trashIcon = li.querySelector('svg');
+        trashIcon.addEventListener('click', event => {
+          if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
+            Idb.del( pdf );
+            li.remove();
+            if ( list?.childElementCount === 0 ){
+              list.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+            }
+          }
+        });
         list?.appendChild(li);
         firstElementWithClass('null_item')?.remove();
       }
