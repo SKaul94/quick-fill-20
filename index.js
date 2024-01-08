@@ -306,9 +306,9 @@ export const configSilentSaveHandler = async event => {
 export const configImportHandler = async event => {
   const fileHandle = await fileOpen( {
     // List of allowed MIME types, defaults to `*/*`.
-    mimeTypes: ['application/json'],
+    mimeTypes: ['application/json', 'text/plain', 'application/x-javascript', 'text/javascript'],
     // List of allowed file extensions (with leading '.'), defaults to `''`.
-    extensions: [ '.json', '.txt' ],
+    extensions: [ '.json', '.js', '.txt' ],
     // Set to `true` for allowing multiple files, defaults to `false`.
     multiple: false,
     // Textual description for file dialog , defaults to `''`.
