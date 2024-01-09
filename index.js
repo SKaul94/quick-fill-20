@@ -185,9 +185,16 @@ firstElementWithClass('load_all_pdf_minder')?.addEventListener('click', pdfAllLo
 firstElementWithClass('load_single_pdf')?.addEventListener('click', pdfLoader('other') );
 firstElementWithClass('load_all_pdf')?.addEventListener('click', pdfAllLoader() );
 
-firstElementWithClass('interprete_xml_file')?.addEventListener('click', function(event){
+firstElementWithClass('interprete_xml_file')?.addEventListener('click', async function(event){
+  event.target.disabled = true;
   const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
-  interpreter.interpret( event );
+  try {
+    await interpreter.interpret( event );
+  } catch (error) {
+    // file selection has been cancelled, nothing to do
+  } finally {
+    event.target.removeAttribute('disabled');
+  }  
 } );
 
 language_selector.addEventListener('change', event => {

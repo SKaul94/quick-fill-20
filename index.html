@@ -131,7 +131,6 @@
   <button class="interprete_xml_file xml" title="XML aus Datei einfügen und interpretieren" data-remember="XML">XML</button>
   <button class="save_all app xml" title="Alle ausgefüllten PDFs speichern">Alle speichern</button>
   <button class="print_all app xml" title="Alle ausgefüllten PDFs drucken">Alle drucken</button>
-  <ul class="menu"></ul>
 </div>
 <div id="pdf_loader" class="pdf_loader hide">
   <h1 class="shadow-font center">PDF-Formulare laden</h1>
@@ -185,6 +184,10 @@
 <template id="xml_template">
   <h2>${filename}: <span class="title"></span></h2>
   <textarea rows="5" class="import wide"></textarea>
+</template>
+
+<template id="xml_interpreter_invocation_template">
+  <ul class="menu"></ul>
 </template>
 
 <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="black" class="keyboard-svg hide" viewBox="0 0 16 16">
