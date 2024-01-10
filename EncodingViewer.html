@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encoding Viewer</title>
+  <style>
+    html * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      color: white;
+      background-color: rgb(40, 40, 40);
+    }
+    button {
+      padding: 0.3rem;
+      margin-right: 0.3rem;
+      font-size: large;
+      text-align: center;
+      border: thin solid;
+      border-radius: 10px;
+      border-color: white black black white;
+      box-shadow: 4px 4px 3px 0 #777777;
+      background-color: #9dd2f6;
+      cursor: pointer;
+    }
+
+    button:focus {
+      outline: none;
+      background-color: deepskyblue;
+    }
+
+    button:active {
+      outline: none;
+      background-color: deepskyblue;
+      transform: translateY(4px);
+    }
+    #data {
+      border: thin solid white;
+      margin: 1rem 0.3rem;
+      padding: 0.3rem;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .box {
+      border: thin solid white;
+      margin: 0.1rem;
+      padding: 0.1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .red {
+      border-color: red;
+      background-color: chocolate;
+    }
+    .break {
+      flex-basis: 100%;
+      height: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Encoding Viewer <button id="import">Import</button></h1>
+  <div id="data">
+  </div>
+<script type="module">
+  import {fileOpen} from './lib/FileOpener.js';
+
+  const button = document.getElementById('import');
+  const data = document.getElementById('data');
+
+  button.addEventListener( 'click', async event => {
+      const xmlFileHandle = await fileOpen( {
+      // List of allowed MIME types, defaults to `*/*`.
+      mimeTypes: ['application/xml'],
+      // List of allowed file extensions (with leading '.'), defaults to `''`.
+      extensions: [ '.xml', '.txt' ],
+      // Set to `true` for allowing multiple files, defaults to `false`.
+      multiple: false,
+      // Textual description for file dialog , defaults to `''`.
+      description: 'XML-Daten',
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'XML',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    } );
+
+    const xmlFile = xmlFileHandle instanceof File ? xmlFileHandle : await xmlFileHandle.getFile();
+    const xmlFilename = xmlFile.name;
+    const arrayBuffer = await xmlFile.arrayBuffer();
+    const intArray = new Uint8Array( arrayBuffer );
+    
+    for ( const nextInt of intArray ){
+      const box = document.createElement('div');
+      if ( nextInt === 10 || nextInt === 13 ){
+        box.classList.add('break');
+      } else {
+        const char = nextInt === 32 ? '&nbsp;' : String.fromCharCode(nextInt);
+        box.innerHTML = `<div>${char}</div> <div>${nextInt}</div> <div>${nextInt.toString(16).toUpperCase()}</div`;
+        box.classList.add('box');
+        if ( nextInt > 126 ) box.classList.add('red');
+      }
+      data.appendChild( box );
+    }
+    
+  });
+
+</script>  
+</body>
+</html>
