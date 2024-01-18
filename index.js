@@ -358,6 +358,7 @@ export const configImportHandler = async event => {
   const fileContents = await file.text();
   const quickFillConfig = jsonParseWithFunctions( fileContents );
   const mergedObjects = mergeObjects( config, quickFillConfig );
+  mergedObjects.version = mergedObjects.version.split('.').map( (num,i) => i==1?parseInt(num)+1:num ).join('.');  
   Idb.set(config.configIdentifier, jsonStringifyWithFunctions( mergedObjects ) );
   location.reload();  // loading quickFillConfig from IndexedDB automatically
   // Object.assign( config, quickFillConfig );
