@@ -175,7 +175,7 @@ function updatePdfAndDB(){
 
 firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListener );
 firstElementWithClass('print_all')?.addEventListener('click', PdfDoc.printAllListener );
-firstElementWithClass('open_import_xml_clipboard')?.addEventListener('click', xmlHandler(true) );
+document.querySelector('.open_import_xml_clipboard.app')?.addEventListener('click', xmlHandler(true) );
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
 
 firstElementWithClass('load_pdf_asyl')?.addEventListener('click', pdfLoader('asyl') );
@@ -189,7 +189,20 @@ firstElementWithClass('interprete_xml_file')?.addEventListener('click', async fu
   event.target.disabled = true;
   const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
   try {
-    await interpreter.interpret( event );
+    await interpreter.interpretFile( event );
+  } catch (error) {
+    // file selection has been cancelled, nothing to do
+  } finally {
+    event.target.removeAttribute('disabled');
+  }  
+} );
+
+firstElementWithClass('interprete_xml_clipboard')?.addEventListener('click', async function(event){
+  event.target.disabled = true;
+  const clipBoardText = await navigator.clipboard.readText();
+  const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
+  try {
+    await interpreter.interpretClipBoard( clipBoardText );
   } catch (error) {
     // file selection has been cancelled, nothing to do
   } finally {
