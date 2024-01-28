@@ -191,7 +191,7 @@ firstElementWithClass('interprete_xml_file')?.addEventListener('click', async fu
   try {
     await interpreter.interpretFile( event );
   } catch (error) {
-    // file selection has been cancelled, nothing to do
+    console.log('file selection cancelled or error in selected file');
   } finally {
     event.target.removeAttribute('disabled');
   }  
@@ -204,7 +204,7 @@ firstElementWithClass('interprete_xml_clipboard')?.addEventListener('click', asy
   try {
     await interpreter.interpretClipBoard( clipBoardText );
   } catch (error) {
-    // file selection has been cancelled, nothing to do
+    console.log(`invalid clipboard buffer content: probably not XML: "${clipBoardText}"`);
   } finally {
     event.target.removeAttribute('disabled');
   }  
