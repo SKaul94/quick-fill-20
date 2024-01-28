@@ -214,6 +214,20 @@ language_selector.addEventListener('change', event => {
   localStorage.setItem('quickfill_xml_language', event.target.value);
 });
 
+/**
+ * @abstract guess type of PDF form and language from file name
+ * @example "sammelvodruck-asylgesuch-albanisch" yields [ "asylgesuch", "albanisch" ]
+ * @access const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
+ * @param {File} pdfFile instance of file which is PDF
+ * @returns tuple with kind of pdf and language
+ */
+export function kindOfPDF_language( pdfFile ){
+  const kindOfPDF = pdfFile.name.split('-')[1];
+  const filenameWithoutSuffix = pdfFile.name.substring(0, pdfFile.name.lastIndexOf('.')) || pdfFile.name;
+  const language = filenameWithoutSuffix.split('-').pop();
+  return [ kindOfPDF, language ];
+}
+
 function pdfAllLoader(){
   return async event => {
     event.stopImmediatePropagation();
@@ -235,8 +249,7 @@ function pdfAllLoader(){
       if ( pdfFile.name?.match(/\(\d+\)/) ) continue;
       if ( pdfFile.name?.slice(-4)?.toLowerCase() !== '.pdf' ) continue;
       const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
-      const kindOfPDF = pdfFile.name.split('-')[1];
-      const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+      const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
       const key = kindOfPDF ? `${kindOfPDF}_${language}` : pdfFile.name.slice(0,-4);
 
       // store binary in IndexedDB:
@@ -283,8 +296,7 @@ export function pdfLoader(){
     const pdfFile = pdfFileHandles instanceof File ? pdfFileHandles : await pdfFileHandles.getFile();
 
     // store binary in IndexedDB:
-    const kindOfPDF = pdfFile.name.split('-')[1];
-    const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+    const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
     const pdfFileNameComponents = pdfFile.name.split('.');
     pdfFileNameComponents.pop();
     // key serves (1.) as index into IndexedDB and (2.) as class name in HTML. Therefore no special chars allowed 
@@ -472,8 +484,7 @@ export async function addSinglePDF( params ){
   const pdfDoc = new PdfDoc( pdfFile, htmlSpace );
 
   const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
-  const kindOfPDF = pdfFile.name.split('-')[1];
-  const language = pdfFile.name.split('-').slice(-1)[0].split('.')[0];
+  const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
   const key = `${kindOfPDF}_${language}`;
 
   // store binary in IndexedDB:
