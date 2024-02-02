@@ -276,7 +276,7 @@ export function cloudLoader( target ){
 
       try {
         const response = await fetch( url, { signal, mode: "cors" } ); // cors, no-cors, *cors, same-origin 
-        arrayBuffer = await response.arrayBuffer();
+        if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert(response.statusText);
       } catch ( error ) {
         alert( error );
         console.error(`Error: ${error.message} while downloading ${url}`);
