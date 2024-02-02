@@ -23,6 +23,7 @@ import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
 import * as Idb from './lib/idb-keyval.js';
+import {JSZip} from './lib/jszip.js';
 // Material Design
 // import * as MWC from './lib/mwc.min.js';
 
@@ -182,6 +183,10 @@ firstElementWithClass('load_pdf_asyl')?.addEventListener('click', pdfLoader('asy
 firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('minder') );
 firstElementWithClass('load_all_pdf_asyl')?.addEventListener('click', pdfAllLoader() );
 firstElementWithClass('load_all_pdf_minder')?.addEventListener('click', pdfAllLoader() );
+
+firstElementWithClass('cloud_load_single_pdf')?.addEventListener('click', cloudLoader('Datei.pdf') );
+firstElementWithClass('cloud_load_all_pdf')?.addEventListener('click', cloudLoader('Archiv.zip') );
+
 firstElementWithClass('load_single_pdf')?.addEventListener('click', pdfLoader('other') );
 firstElementWithClass('load_all_pdf')?.addEventListener('click', pdfAllLoader() );
 
@@ -215,17 +220,92 @@ language_selector.addEventListener('change', event => {
 });
 
 /**
- * @abstract guess type of PDF form and language from file name
+ * @summary guess type of PDF form and language from file name
  * @example "sammelvodruck-asylgesuch-albanisch" yields [ "asylgesuch", "albanisch" ]
  * @access const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
- * @param {File} pdfFile instance of file which is PDF
+ * @param {File} pdfFile - instance of file which is PDF
  * @returns tuple with kind of pdf and language
  */
-export function kindOfPDF_language( pdfFile ){
-  const kindOfPDF = pdfFile.name.split('-')[1];
-  const filenameWithoutSuffix = pdfFile.name.substring(0, pdfFile.name.lastIndexOf('.')) || pdfFile.name;
+export function kindOfPDF_language( pdfFileName ){
+  const kindOfPDF = pdfFileName.split('-')[1];
+  const filenameWithoutSuffix = pdfFileName.substring(0, pdfFileName.lastIndexOf('.')) || pdfFileName;
   const language = filenameWithoutSuffix.split('-').pop();
   return [ kindOfPDF, language ];
+}
+
+/**
+ * @summary add a list item to the list of loaded PDFs
+ * @param {String} key - index of IndexedDB store, where PDF binary is stored
+ * @param {File} pdfFile - instance of file which is PDF
+ */
+function managePdfList( key, pdfFile ){
+  const li = document.createElement('li');
+  li.innerHTML = `${key} => ${pdfFile.name} `  + trashWhiteIconSVG;
+  const trashIcon = li.querySelector('svg');
+  trashIcon.addEventListener('click', event => {
+    if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
+      Idb.del( key );
+      li.remove();
+      if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
+        firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+      }
+    }
+  });
+  firstElementWithClass('loaded_pdfs')?.appendChild(li);
+  firstElementWithClass('null_item')?.remove();
+}
+
+/**
+ * @summary event handler for loading PDFs and ZIPs from cloud
+ * @param {String} target - file to be loaded from cloud store
+ */
+export function cloudLoader( target ){
+  return async event => {
+    const url = prompt(`Bitte URL von ${target} eingeben!`, `http://127.0.0.1:5500/${target}`);
+    if ( url ){
+      const fileName = url.split('/').pop();
+      const fileNameSuffix = fileName.slice(-4).toLowerCase();
+      
+      const abortButton = document.querySelector(".cloud_abort");
+      abortButton.classList.remove('hide');
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const abortListener = event => { controller.abort() }
+      abortButton.addEventListener( 'click', abortListener );
+      let arrayBuffer;
+
+      try {
+        const response = await fetch( url, { signal, mode: "cors" } ); // cors, no-cors, *cors, same-origin 
+        arrayBuffer = await response.arrayBuffer();
+      } catch ( error ) {
+        alert( error );
+        console.error(`Error: ${error.message} while downloading ${url}`);
+      } finally {
+        abortButton.classList.add('hide');
+        abortButton.removeEventListener( 'click', abortListener );
+      }
+      if ( arrayBuffer ){
+        if ( fileNameSuffix === '.pdf' ){ 
+          const pdfBinary = new Uint8Array( arrayBuffer );
+          const [ kindOfPDF, language ] = kindOfPDF_language( fileName );
+          const key = kindOfPDF ? `${kindOfPDF}_${language}` : fileName.slice(0,-4);
+          await Idb.set( key, pdfBinary );
+          managePdfList( key, {name: fileName} );
+        } else if ( fileNameSuffix === '.zip' ) {
+          const jsZip = new JSZip();
+          const zip = await jsZip.loadAsync( arrayBuffer );
+          for ( const singleFileName of Object.keys( zip.files ) ){
+            if ( singleFileName.startsWith('__MAC') ) continue;
+            const pdfBinary = await zip.files[ singleFileName ].async( 'uint8array' );
+            const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
+            const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
+            await Idb.set( key, pdfBinary );
+            managePdfList( key, {name: singleFileName} );
+          }
+        } 
+      }
+    }
+  };
 }
 
 function pdfAllLoader(){
@@ -249,25 +329,12 @@ function pdfAllLoader(){
       if ( pdfFile.name?.match(/\(\d+\)/) ) continue;
       if ( pdfFile.name?.slice(-4)?.toLowerCase() !== '.pdf' ) continue;
       const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
-      const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
+      const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile.name );
       const key = kindOfPDF ? `${kindOfPDF}_${language}` : pdfFile.name.slice(0,-4);
 
       // store binary in IndexedDB:
       await Idb.set( key, pdfBinary );
-      const li = document.createElement('li');
-      li.innerHTML = `${key} => ${pdfFile.name} `  + trashWhiteIconSVG;
-      const trashIcon = li.querySelector('svg');
-      trashIcon.addEventListener('click', event => {
-        if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
-          Idb.del( key );
-          li.remove();
-          if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
-            firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
-          }
-        }
-      });
-      firstElementWithClass('loaded_pdfs')?.appendChild(li);
-      firstElementWithClass('null_item')?.remove();
+      managePdfList( key, pdfFile );
     }
   };
 }
@@ -296,7 +363,7 @@ export function pdfLoader(){
     const pdfFile = pdfFileHandles instanceof File ? pdfFileHandles : await pdfFileHandles.getFile();
 
     // store binary in IndexedDB:
-    const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
+    const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile.name );
     const pdfFileNameComponents = pdfFile.name.split('.');
     pdfFileNameComponents.pop();
     // key serves (1.) as index into IndexedDB and (2.) as class name in HTML. Therefore no special chars allowed 
@@ -304,20 +371,7 @@ export function pdfLoader(){
 
     if ( ! await Idb.get(key) ) {
       await Idb.set(key, new Uint8Array( await pdfFile.arrayBuffer() ));
-      const li = document.createElement('li');
-      li.innerHTML = `${key} => ${pdfFile.name} ` + trashWhiteIconSVG;
-      const trashIcon = li.querySelector('svg');
-      trashIcon.addEventListener('click', event => {
-        if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
-          Idb.del( key );
-          li.remove();
-          if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
-            firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
-          }
-        }
-      });
-      firstElementWithClass('loaded_pdfs')?.appendChild(li);
-      firstElementWithClass('null_item')?.remove();
+      managePdfList( key, pdfFile );
     }  
   };
 
@@ -484,7 +538,7 @@ export async function addSinglePDF( params ){
   const pdfDoc = new PdfDoc( pdfFile, htmlSpace );
 
   const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
-  const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile );
+  const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile.name );
   const key = `${kindOfPDF}_${language}`;
 
   // store binary in IndexedDB:
@@ -567,7 +621,7 @@ async function switchToState( state ){
   for ( const showElement of document.querySelectorAll( '.' + state ) ){
     showElement.classList.remove('hide');
   }
-  const all_loaded_pdfs = (await Idb.keys()).filter( key => key.includes('_') );
+  const all_loaded_pdfs = (await Idb.keys()); // .filter( key => key.includes('_') );
   const allLanguages = Array.from( new Set( all_loaded_pdfs.map( filename_language_mapper ) ) );
   switch ( state ){
     case 'pdf_loader':

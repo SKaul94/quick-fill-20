@@ -135,8 +135,16 @@
 </div>
 <div id="pdf_loader" class="pdf_loader hide">
   <h1 class="shadow-font center">PDF-Formulare laden</h1>
-  <button class="load_all_pdf_asyl pdf_loader" title="Alle PDFs für Asylantrag für Erwachsene laden" data-remember="asyl">Alle PDFs für Asylantrag für Erwachsene laden</button>
-  <button class="load_all_pdf_minder pdf_loader" title="Alle PDFs für Asylantrag für Minderjährige laden" data-remember="minder">Alle PDFs für Asylantrag für Minderjährige laden</button>
+  <!-- 
+    <button class="load_all_pdf_asyl pdf_loader" title="Alle PDFs für Asylantrag für Erwachsene laden" data-remember="asyl">Alle PDFs für Asylantrag für Erwachsene laden</button>
+    <button class="load_all_pdf_minder pdf_loader" title="Alle PDFs für Asylantrag für Minderjährige laden" data-remember="minder">Alle PDFs für Asylantrag für Minderjährige laden</button>
+  -->
+  <span>Cloud:</span>
+  <button class="cloud_load_single_pdf pdf_loader" title="Einzelnes PDF aus der Cloud laden" data-remember="einzeln">PDF laden</button>
+  <button class="cloud_load_all_pdf pdf_loader" title="gezippter PDF-Ordner aus der Cloud laden" data-remember="all_pdf">PDF-Zip-Ordner laden</button>
+  <button class="cloud_abort hide" title="Download abbrechen">Abbrechen</button>
+  <hr class="spacy">
+  <span>Lokal:</span>
   <button class="load_single_pdf pdf_loader" title="Einzelnes PDF laden" data-remember="einzeln">Einzelnes PDF laden</button>
   <button class="load_all_pdf pdf_loader" title="Alle PDFs aus einem Ordner laden" data-remember="all_pdf">Ordner laden</button>
   <hr class="spacy">
