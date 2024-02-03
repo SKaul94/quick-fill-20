@@ -261,7 +261,7 @@ function managePdfList( key, pdfFile ){
  */
 export function cloudLoader( target ){
   return async event => {
-    const url = prompt(`Bitte URL von ${target} eingeben!`, `${window.location.origin}/${target}`);
+    const url = prompt(`Bitte URL von ${target} eingeben!`, `${window.location.origin}${window.location.pathname}${target}`);
     if ( url ){
       const fileName = url.split('/').pop();
       const fileNameSuffix = fileName.slice(-4).toLowerCase();
