@@ -198,6 +198,28 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
   const password = prompt('Passwort?');
   const defaultFileName = new Date().toLocaleString("de-DE", {timeZone: "Europe/Berlin"}).split(', ').join('_') + "-all-encrypted.zip";
 
+  // create a new file handle before time consuming encryption
+  let newHandle;
+  try {
+    newHandle = await window.showSaveFilePicker({
+      id: 'save-pdf',
+      startIn: 'downloads',
+      suggestedName: defaultFileName,
+      types: [
+        {
+          description: "Zip file",
+          accept: { "application/zip": [".zip",".ZIP"] },
+        },
+      ],
+    });
+  } catch (error) {
+    console.error(error);
+    // new user interaction needed to refresh showSaveFilePicker timeout
+    // see @link https://www.extension.ninja/blog/post/solved-this-function-must-be-called-during-a-user-gesture/
+  }
+
+  if ( ! newHandle ) return;
+
   for ( const [ key, pdfBinary ] of await Idb.entries() ){
     const encryptedPdfData = await BrowserCrypto.encrypt( pdfBinary, password );
     zip.file( `${key}.pdf`, encryptedPdfData, { binary: true } );
@@ -205,18 +227,6 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
 
   const zipFile = await zip.generateAsync({type:"uint8array"});
 
-  // create a new file handle
-  const newHandle = await window.showSaveFilePicker({
-    id: 'save-pdf',
-    startIn: 'downloads',
-    suggestedName: defaultFileName,
-    types: [
-      {
-        description: "Zip file",
-        accept: { "application/zip": [".zip",".ZIP"] },
-      },
-    ],
-  });
   // create a FileSystemWritableFileStream to write to
   const writableStream = await newHandle.createWritable();
   // write file
