@@ -14,6 +14,10 @@ body {
   text-align: center;
 }
 
+.shift_right {
+  margin-left: 3rem;
+}
+
 object, iframe {
   display: block;
   min-height: 35rem;

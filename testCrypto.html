@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Crypto</title>
+</head>
+<body>
+  <h1>Test Crypto</h1>
+  <script type="module">
+    import * as BrowserCrypto from './lib/crypto.js';
+    const content = "text to encrypt";
+
+    const bytes = BrowserCrypto.stringToBytes( content );
+
+    const password = "super secret password";
+
+    const encryptedData = await BrowserCrypto.encrypt(bytes, password);
+
+    // encryptedData will be an object with three string fields:
+    // `salt`, `iv` & `cipher`
+
+    const decryptedBytes = await BrowserCrypto.decrypt(encryptedData, password);
+
+    const decryptedContent = BrowserCrypto.bytesToString( decryptedBytes );
+
+    console.assert( content === decryptedContent );
+  </script>
+</body>
+</html>

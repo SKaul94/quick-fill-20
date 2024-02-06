@@ -23,6 +23,7 @@ import {TextBlockEditor} from "./lib/TextBlockEditor.js";
 import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 // store binary in IndexedDB:
 import * as Idb from './lib/idb-keyval.js';
+import * as BrowserCrypto from './lib/crypto.js';
 import {JSZip} from './lib/jszip.js';
 // Material Design
 // import * as MWC from './lib/mwc.min.js';
@@ -184,11 +185,100 @@ firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('
 firstElementWithClass('load_all_pdf_asyl')?.addEventListener('click', pdfAllLoader() );
 firstElementWithClass('load_all_pdf_minder')?.addEventListener('click', pdfAllLoader() );
 
-firstElementWithClass('cloud_load_single_pdf')?.addEventListener('click', cloudLoader('Datei.pdf') );
-firstElementWithClass('cloud_load_all_pdf')?.addEventListener('click', cloudLoader('Archiv.zip') );
-
 firstElementWithClass('load_single_pdf')?.addEventListener('click', pdfLoader('other') );
 firstElementWithClass('load_all_pdf')?.addEventListener('click', pdfAllLoader() );
+firstElementWithClass('load_zip')?.addEventListener('click', pdfZipLoader() );
+firstElementWithClass('cloud_load')?.addEventListener('click', async event => loadAndDecryptArchive() );
+
+/**
+ * @summary encrypt all PDFs already loaded into IndexedDB and save as zip archiv
+ */
+firstElementWithClass('encrypt')?.addEventListener('click', async function(event){
+  const zip = new JSZip();
+  const password = prompt('Passwort?');
+  const defaultFileName = new Date().toLocaleString("de-DE", {timeZone: "Europe/Berlin"}).split(', ').join('_') + "-all-encrypted.zip";
+
+  for ( const [ key, pdfBinary ] of await Idb.entries() ){
+    const encryptedPdfData = await BrowserCrypto.encrypt( pdfBinary, password );
+    zip.file( `${key}.pdf`, encryptedPdfData, { binary: true } );
+  }
+
+  const zipFile = await zip.generateAsync({type:"uint8array"});
+
+  // create a new file handle
+  const newHandle = await window.showSaveFilePicker({
+    id: 'save-pdf',
+    startIn: 'downloads',
+    suggestedName: defaultFileName,
+    types: [
+      {
+        description: "Zip file",
+        accept: { "application/zip": [".zip",".ZIP"] },
+      },
+    ],
+  });
+  // create a FileSystemWritableFileStream to write to
+  const writableStream = await newHandle.createWritable();
+  // write file
+  await writableStream.write( zipFile );
+  // close the file and write the contents to disk.
+  await writableStream.close();
+
+} );
+
+/**
+ * @summary load Zip Archive from URL, decrypt all files from Zip Archive and save each of them into IndexedDB
+ * @param {String} fileName - name of the zip archive
+ */
+export async function loadAndDecryptArchive( fileName ){
+  const longFileName = `${window.location.origin}${window.location.pathname}data/${fileName||''}`;
+  const url = fileName ? longFileName : prompt(`Bitte URL eingeben oder abbrechen!`, longFileName);
+  
+  if ( url ){
+    const fileName = url.split('/').pop();
+    const abortButton = document.querySelector(".cloud_abort");
+    abortButton.classList.remove('hide');
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const abortListener = event => { controller.abort() }
+    abortButton.addEventListener( 'click', abortListener );
+    let arrayBuffer;
+
+    try {
+      const response = await fetch( url, { signal } ); // { signal, mode: "cors" } cors, no-cors, *cors, same-origin 
+      if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert(response.statusText);
+    } catch ( error ) {
+      alert( error );
+      console.error(`Error: ${error.message} while downloading ${url}`);
+    } finally {
+      abortButton.classList.add('hide');
+      abortButton.removeEventListener( 'click', abortListener );
+    }
+    if ( arrayBuffer ){
+      const jsZip = new JSZip();
+      const zip = await jsZip.loadAsync( arrayBuffer );
+      const password = prompt(`Passwort für ${url}?`);
+      for ( const singleFileName of Object.keys( zip.files ) ){
+        if ( singleFileName.startsWith('__MAC') ) continue;
+        // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
+        const encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
+        /** {ArrayBuffer} pdfData - decrypted content */
+        const pdfData = await BrowserCrypto.decrypt( encryptedPdfData, password );
+        const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
+        const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
+        await Idb.set( key, new Uint8Array( pdfData ) );
+        managePdfList( key, { name: singleFileName } );
+      }
+    }
+  }
+};
+
+if ( await Idb.keys().length === 0 ){
+  for ( const fileName of config.pdfInitialLoading ){
+    // ToDo initial loading, e.g.
+    // loadAndDecryptArchive( fileName );
+  }
+}
 
 firstElementWithClass('interprete_xml_file')?.addEventListener('click', async function(event){
   event.target.disabled = true;
@@ -253,59 +343,6 @@ function managePdfList( key, pdfFile ){
   });
   firstElementWithClass('loaded_pdfs')?.appendChild(li);
   firstElementWithClass('null_item')?.remove();
-}
-
-/**
- * @summary event handler for loading PDFs and ZIPs from cloud
- * @param {String} target - file to be loaded from cloud store
- */
-export function cloudLoader( target ){
-  return async event => {
-    const url = prompt(`Bitte URL von ${target} eingeben!`, `${window.location.origin}${window.location.pathname}${target}`);
-    if ( url ){
-      const fileName = url.split('/').pop();
-      const fileNameSuffix = fileName.slice(-4).toLowerCase();
-      
-      const abortButton = document.querySelector(".cloud_abort");
-      abortButton.classList.remove('hide');
-      const controller = new AbortController();
-      const signal = controller.signal;
-      const abortListener = event => { controller.abort() }
-      abortButton.addEventListener( 'click', abortListener );
-      let arrayBuffer;
-
-      try {
-        const response = await fetch( url, { signal, mode: "cors" } ); // cors, no-cors, *cors, same-origin 
-        if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert(response.statusText);
-      } catch ( error ) {
-        alert( error );
-        console.error(`Error: ${error.message} while downloading ${url}`);
-      } finally {
-        abortButton.classList.add('hide');
-        abortButton.removeEventListener( 'click', abortListener );
-      }
-      if ( arrayBuffer ){
-        if ( fileNameSuffix === '.pdf' ){ 
-          const pdfBinary = new Uint8Array( arrayBuffer );
-          const [ kindOfPDF, language ] = kindOfPDF_language( fileName );
-          const key = kindOfPDF ? `${kindOfPDF}_${language}` : fileName.slice(0,-4);
-          await Idb.set( key, pdfBinary );
-          managePdfList( key, {name: fileName} );
-        } else if ( fileNameSuffix === '.zip' ) {
-          const jsZip = new JSZip();
-          const zip = await jsZip.loadAsync( arrayBuffer );
-          for ( const singleFileName of Object.keys( zip.files ) ){
-            if ( singleFileName.startsWith('__MAC') ) continue;
-            const pdfBinary = await zip.files[ singleFileName ].async( 'uint8array' );
-            const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
-            const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
-            await Idb.set( key, pdfBinary );
-            managePdfList( key, {name: singleFileName} );
-          }
-        } 
-      }
-    }
-  };
 }
 
 function pdfAllLoader(){
