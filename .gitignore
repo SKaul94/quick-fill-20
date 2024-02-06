@@ -4,4 +4,3 @@ node_modules
 bundle.js
 bundle.js.map
 *.pdf
-*.zip
