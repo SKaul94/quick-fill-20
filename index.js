@@ -191,15 +191,32 @@ firstElementWithClass('load_zip')?.addEventListener('click', pdfZipLoader() );
 firstElementWithClass('cloud_load')?.addEventListener('click', async event => loadAndDecryptArchive() );
 
 /**
+ * @summary ask for password
+ */
+let passwordForEncyption;
+firstElementWithClass('password')?.addEventListener('input', function(event){
+  passwordForEncyption = this.value;
+});
+
+firstElementWithClass('password_visibiliy')?.addEventListener('click', event => {
+  const passwordElement = firstElementWithClass('password');
+  passwordElement.type = passwordElement.type === 'password' ? 'text' : 'password';
+});
+
+/**
  * @summary encrypt all PDFs already loaded into IndexedDB and save as zip archiv
  */
 firstElementWithClass('encrypt')?.addEventListener('click', async function(event){
   const zip = new JSZip();
-  const password = prompt('Passwort?');
+  const password = passwordForEncyption;
+  if ( ! password ) { alert('Zuerst Passwort festlegen!'); return; }
+  if ( (await Idb.keys()).length === 0) { alert('Zuerst PDFs laden!'); return; }
   const defaultFileName = new Date().toLocaleString("de-DE", {timeZone: "Europe/Berlin"}).split(', ').join('_') + "-all-encrypted.zip";
 
   // create a new file handle before time consuming encryption
   let newHandle;
+  
+  // showSaveFilePicker must be first action after click
   try {
     newHandle = await window.showSaveFilePicker({
       id: 'save-pdf',
@@ -225,14 +242,18 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
     zip.file( `${key}.pdf`, encryptedPdfData, { binary: true } );
   }
 
-  const zipFile = await zip.generateAsync({type:"uint8array"});
+  const zipContent = await zip.generateAsync({type:"uint8array"});
+
+  const file = await newHandle.getFile();
 
   // create a FileSystemWritableFileStream to write to
   const writableStream = await newHandle.createWritable();
   // write file
-  await writableStream.write( zipFile );
+  await writableStream.write( zipContent );
   // close the file and write the contents to disk.
   await writableStream.close();
+
+  alert( `Gesichert unter ${file.name} verschlüselt mit "${password}"` );
 
 } );
 
@@ -274,6 +295,7 @@ export async function loadAndDecryptArchive( fileName ){
         const encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
         /** {ArrayBuffer} pdfData - decrypted content */
         const pdfData = await BrowserCrypto.decrypt( encryptedPdfData, password );
+        if ( ! pdfData ) break; // wrong password 
         const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
         const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
         await Idb.set( key, new Uint8Array( pdfData ) );
@@ -283,20 +305,13 @@ export async function loadAndDecryptArchive( fileName ){
   }
 };
 
-if ( await Idb.keys().length === 0 ){
-  for ( const fileName of config.pdfInitialLoading ){
-    // ToDo initial loading, e.g.
-    // loadAndDecryptArchive( fileName );
-  }
-}
-
 firstElementWithClass('interprete_xml_file')?.addEventListener('click', async function(event){
   event.target.disabled = true;
   const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
   try {
     await interpreter.interpretFile( event );
   } catch (error) {
-    console.log('file selection cancelled or error in selected file');
+    console.log('file selection cancelled or error in selected file:', error );
   } finally {
     event.target.removeAttribute('disabled');
   }  
@@ -634,6 +649,13 @@ document.getElementById('dark_button')?.addEventListener('click', event => {
   setDarkMode( DarkMode );
   localStorage.setItem('DarkMode', DarkMode);
 });
+
+if ( (await Idb.keys()).length === 0 && confirm( 'PDFs initial laden?' ) ){
+  for ( const fileName of config.pdfInitialLoading ){
+    // initial loading
+    if ( confirm( `${fileName} laden?` ) ) loadAndDecryptArchive( fileName );
+  }
+}
 
 /* *  ***********  SPA Router: switch between SPA states ************* * */
 
