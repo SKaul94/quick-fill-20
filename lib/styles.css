@@ -374,6 +374,11 @@ hr.separator:before {
   text-align: justify;
 }
 
+.help .fixed {
+  font-family: monospace;
+  font-size: small;
+}
+
 ul.menu {
   display: flex;
   flex-wrap: wrap;
