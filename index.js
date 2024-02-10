@@ -288,7 +288,7 @@ export async function loadAndDecryptArchive( fileName ){
     if ( arrayBuffer ){
       const jsZip = new JSZip();
       const zip = await jsZip.loadAsync( arrayBuffer );
-      const password = prompt(`Passwort für ${url}?`);
+      const password = passwordForEncyption ? passwordForEncyption : prompt(`Passwort für ${url}?`);
       for ( const singleFileName of Object.keys( zip.files ) ){
         if ( singleFileName.startsWith('__MAC') ) continue;
         // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
