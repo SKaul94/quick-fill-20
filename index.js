@@ -262,7 +262,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
  * @param {String} fileName - name of the zip archive
  */
 export async function loadAndDecryptArchive( fileName ){
-  const longFileName = `${window.location.origin}${window.location.pathname}data/${fileName||''}`;
+  const longFileName = fileName ? fileName.startsWith('https') ? fileName : `${window.location.origin}${window.location.pathname}data/${fileName}` : `${window.location.origin}${window.location.pathname}data/`;
   const url = fileName ? longFileName : prompt(`Bitte URL eingeben oder abbrechen!`, longFileName);
   
   if ( url ){
@@ -271,12 +271,14 @@ export async function loadAndDecryptArchive( fileName ){
     abortButton.classList.remove('hide');
     const controller = new AbortController();
     const signal = controller.signal;
+    const mode = config.pdfInitialLoadingMode; // cors, no-cors, *cors, same-origin
+    const options = mode ? { signal, mode } : { signal };
     const abortListener = event => { controller.abort() }
     abortButton.addEventListener( 'click', abortListener );
     let arrayBuffer;
 
     try {
-      const response = await fetch( url, { signal } ); // { signal, mode: "cors" } cors, no-cors, *cors, same-origin 
+      const response = await fetch( url, options );  
       if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert(response.statusText);
     } catch ( error ) {
       alert( error );
