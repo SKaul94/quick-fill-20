@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tagerechner</title>
+</head>
+<body>
+  <h1>Tagerechner: Tage zwischen zwei Daten</h1>
+  Erster Tag: <input id="first" value="1.1.2000"/>
+  <br>Zweiter Tag: <input id="second" value="1.1.2001"/>
+  <br>Anzahl Tage dazwischen: <span id="result"></span>
+  
+  <script>
+    const first = document.getElementById('first');
+    const second = document.getElementById('second');
+    const result = document.getElementById('result');
+    first.addEventListener('input', eventListener);
+    second.addEventListener('input', eventListener);
+    /**
+     * Take the difference between the dates and divide by milliseconds per day.
+     * Round to nearest whole number to deal with DST.
+     */
+    function datediff(first, second) {        
+        return Math.round((second - first) / (1000 * 60 * 60 * 24));
+    }
+
+    /**
+     * new Date("dateString") is browser-dependent and discouraged, so we'll write
+     * a simple parse function for DE date format 
+     */
+    function parseDate(str) {
+      let [day, month, year] = str.split('.').map( x => parseInt( x ) );
+      if ( year < 100 ) year += 2000;
+      const result = new Date(year, month || 0, day || 1);
+      return result;
+    }
+
+    function eventListener( event ){
+      result.innerText = datediff(parseDate(first.value), parseDate(second.value));
+    }
+
+    eventListener();
+    
+  </script>
+</body>
+</html>
