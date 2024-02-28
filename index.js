@@ -262,7 +262,10 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
  * @param {String} fileName - name of the zip archive
  */
 export async function loadAndDecryptArchive( fileName ){
-  const longFileName = fileName ? fileName.startsWith('https') ? fileName : `${window.location.origin}${window.location.pathname}data/${fileName}` : `${window.location.origin}${window.location.pathname}data/`;
+  const pathArray = window.location.pathname.split('/');
+  pathArray.pop();
+  const prefix = pathArray.join('/');
+  const longFileName = fileName ? fileName.startsWith('https') ? fileName : `${window.location.origin}${prefix}/data/${fileName}` : `${window.location.origin}${prefix}/data/`;
   const url = fileName ? longFileName : prompt(`Bitte URL eingeben oder abbrechen!`, longFileName);
   
   if ( url ){
@@ -279,9 +282,9 @@ export async function loadAndDecryptArchive( fileName ){
 
     try {
       const response = await fetch( url, options );  
-      if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert(response.statusText);
+      if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert( `Error: ${response.statusText}: "${url}"` );
     } catch ( error ) {
-      alert( error );
+      alert( `Error: ${error.message} while downloading ${url}` );
       console.error(`Error: ${error.message} while downloading ${url}`);
     } finally {
       abortButton.classList.add('hide');
