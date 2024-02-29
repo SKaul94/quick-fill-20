@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG, openViewSVG} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -239,7 +239,8 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
 
   for ( const [ key, pdfBinary ] of await Idb.entries() ){
     const encryptedPdfData = await BrowserCrypto.encrypt( pdfBinary, password );
-    zip.file( `${key}.pdf`, encryptedPdfData, { binary: true } );
+    const fileName = key.match(/[-_]profile$/i) ? `${key}.txt` : `${key}.pdf`;
+    zip.file( fileName, encryptedPdfData, { binary: true } );
   }
 
   const zipContent = await zip.generateAsync({type:"uint8array"});
@@ -253,7 +254,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
   // close the file and write the contents to disk.
   await writableStream.close();
 
-  alert( `Gesichert unter ${file.name} verschlüselt mit "${password}"` );
+  alert( `Verschlüselt gesichert unter ${file.name}.` );
 
 } );
 
@@ -265,7 +266,7 @@ export async function loadAndDecryptArchive( fileName ){
   const pathArray = window.location.pathname.split('/');
   pathArray.pop();
   const prefix = pathArray.join('/');
-  const longFileName = fileName ? fileName.startsWith('https') ? fileName : `${window.location.origin}${prefix}/data/${fileName}` : `${window.location.origin}${prefix}/data/`;
+  const longFileName = fileName ? fileName.match(/^https?/i) ? fileName : `${window.location.origin}${prefix}/data/${fileName}` : `${window.location.origin}${prefix}/data/`;
   const url = fileName ? longFileName : prompt(`Bitte URL eingeben oder abbrechen!`, longFileName);
   
   if ( url ){
@@ -291,6 +292,7 @@ export async function loadAndDecryptArchive( fileName ){
       abortButton.removeEventListener( 'click', abortListener );
     }
     if ( arrayBuffer ){
+      const result = [];
       const jsZip = new JSZip();
       const zip = await jsZip.loadAsync( arrayBuffer );
       const password = passwordForEncyption ? passwordForEncyption : prompt(`Passwort für ${url}?`);
@@ -305,7 +307,9 @@ export async function loadAndDecryptArchive( fileName ){
         const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
         await Idb.set( key, new Uint8Array( pdfData ) );
         managePdfList( key, { name: singleFileName } );
+        result.push( key );
       }
+      return result;
     }
   }
 };
@@ -360,8 +364,8 @@ export function kindOfPDF_language( pdfFileName ){
  */
 function managePdfList( key, pdfFile ){
   const li = document.createElement('li');
-  li.innerHTML = `${key} => ${pdfFile.name} `  + trashWhiteIconSVG;
-  const trashIcon = li.querySelector('svg');
+  li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span title="Löschen">${trashWhiteIconSVG}</span>` + (key.match(/.profile/i)?`<span title="zur Konfiguration hinzu laden">${openViewSVG}<span>`:'');
+  const [trashIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
   trashIcon.addEventListener('click', event => {
     if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
       Idb.del( key );
@@ -369,6 +373,13 @@ function managePdfList( key, pdfFile ){
       if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
         firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
       }
+    }
+  });
+  configIcon?.addEventListener('click', async event => {
+    if ( confirm('Wollen Sie diese Konfiguration dazu laden?') ){
+      const uint8array = await Idb.get( key );
+      const fileContents = new TextDecoder().decode( uint8array );
+      mergeConfigAndReload( fileContents );
     }
   });
   firstElementWithClass('loaded_pdfs')?.appendChild(li);
@@ -412,9 +423,9 @@ export function pdfLoader(){
 
       const pdfFileHandles = await fileOpen( {
         // List of allowed MIME types, defaults to `*/*`.
-        mimeTypes: ['application/pdf'],
+        mimeTypes: ['application/pdf', 'application/json', 'text/plain'],
         // List of allowed file extensions (with leading '.'), defaults to `''`.
-        extensions: [ '.pdf', '.PDF' ],
+        extensions: [ '.pdf', '.PDF', '.json', '.txt', '.TXT' ],
         // Set to `true` for allowing multiple files, defaults to `false`.
         multiple: false,
         // Textual description for file dialog , defaults to `''`.
@@ -436,8 +447,10 @@ export function pdfLoader(){
     // key serves (1.) as index into IndexedDB and (2.) as class name in HTML. Therefore no special chars allowed 
     const key = kindOfPDF && language ? `${kindOfPDF}_${language}` : pdfFileNameComponents.join('_');
 
-    if ( ! await Idb.get(key) ) {
-      await Idb.set(key, new Uint8Array( await pdfFile.arrayBuffer() ));
+    if ( await Idb.get( key ) ){
+      alert( `"${key}" already loaded. Please delete it first.` );
+    } else {
+      await Idb.set( key, new Uint8Array( await pdfFile.arrayBuffer() ));
       managePdfList( key, pdfFile );
     }  
   };
@@ -484,24 +497,44 @@ export const configSilentSaveHandler = async event => {
 };
 
 export const configImportHandler = async event => {
-  const fileHandle = await fileOpen( {
-    // List of allowed MIME types, defaults to `*/*`.
-    mimeTypes: ['application/json', 'text/plain', 'application/x-javascript', 'text/javascript'],
-    // List of allowed file extensions (with leading '.'), defaults to `''`.
-    extensions: [ '.json', '.js', '.txt' ],
-    // Set to `true` for allowing multiple files, defaults to `false`.
-    multiple: false,
-    // Textual description for file dialog , defaults to `''`.
-    description: 'QuickFill Configuration',
-    // Suggested directory in which the file picker opens. A well-known directory or a file handle.
-    startIn: 'downloads',
-    // By specifying an ID, the user agent can remember different directories for different IDs.
-    id: 'config',
-    // Include an option to not apply any filter in the file picker, defaults to `false`.
-    excludeAcceptAllOption: false,
-  } );
-  const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
-  const fileContents = await file.text();
+  let fileContents;
+  if ( confirm( 'Import von lokaler Datei?' ) ){
+    const fileHandle = await fileOpen( {
+      // List of allowed MIME types, defaults to `*/*`.
+      mimeTypes: ['application/json', 'text/plain', 'application/x-javascript', 'text/javascript'],
+      // List of allowed file extensions (with leading '.'), defaults to `''`.
+      extensions: [ '.json', '.js', '.txt' ],
+      // Set to `true` for allowing multiple files, defaults to `false`.
+      multiple: false,
+      // Textual description for file dialog , defaults to `''`.
+      description: 'QuickFill Configuration',
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'config',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    } );
+    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
+    fileContents = await file.text();
+    
+  } else {
+    const url = prompt('URL des Profil-Archivs?', `${location.origin}/data/profile.zip`);
+    if ( url ){
+      const result = await loadAndDecryptArchive( url );
+      if ( result ){
+        const firstKey = result[0]; // ToDo choose from array
+        const uint8array = await Idb.get( firstKey );
+        fileContents = new TextDecoder().decode( uint8array );
+      }     
+    }
+  }
+  if ( fileContents ){
+    mergeConfigAndReload( fileContents );
+  } 
+};
+
+function mergeConfigAndReload( fileContents ){
   const quickFillConfig = jsonParseWithFunctions( fileContents );
   const mergedObjects = mergeObjects( config, quickFillConfig );
   mergedObjects.version = mergedObjects.version.split('.').map( (num,i) => i==1?parseInt(num)+1:num ).join('.');  
@@ -511,8 +544,7 @@ export const configImportHandler = async event => {
   // for (const profileEditor of ProfileEditor.all){
   //   profileEditor.update();
   // }
-  
-};
+}
 
 export const configExportHandler = event => {
   ProfileEditor.updateConfig({});
@@ -655,7 +687,7 @@ document.getElementById('dark_button')?.addEventListener('click', event => {
   localStorage.setItem('DarkMode', DarkMode);
 });
 
-if ( (await Idb.keys()).length === 0 && confirm( 'PDFs initial laden?' ) ){
+if ( ! (await Idb.keys()).length ){
   for ( const fileName of config.pdfInitialLoading ){
     // initial loading
     if ( confirm( `${fileName} laden?` ) ) loadAndDecryptArchive( fileName );
@@ -701,21 +733,8 @@ async function switchToState( state ){
     case 'pdf_loader':
       const list = firstElementWithClass('loaded_pdfs');
       list.innerHTML = `<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>`;
-      for ( const pdf of all_loaded_pdfs ){
-        const li = document.createElement('li');
-        li.innerHTML = pdf + ' ' + trashWhiteIconSVG;
-        const trashIcon = li.querySelector('svg');
-        trashIcon.addEventListener('click', event => {
-          if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
-            Idb.del( pdf );
-            li.remove();
-            if ( list?.childElementCount === 0 ){
-              list.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
-            }
-          }
-        });
-        list?.appendChild(li);
-        firstElementWithClass('null_item')?.remove();
+      for ( const key of all_loaded_pdfs ){
+        managePdfList( key );
       }
       break;
     case 'xml':
