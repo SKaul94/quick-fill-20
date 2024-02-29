@@ -379,7 +379,7 @@ function managePdfList( key, pdfFile ){
   li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span title="Löschen">${trashWhiteIconSVG}</span>` + (key.match(/.profile/i)?`<span title="zur Konfiguration hinzu laden">${openViewSVG}<span>`:'');
   const [trashIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
   trashIcon.addEventListener('click', event => {
-    if ( confirm('Wollen Sie dieses PDF aus dem Browser entfernen?') ){
+    if ( confirm('Wollen Sie diese Datei aus dem Browser entfernen?') ){
       Idb.del( key );
       li.remove();
       if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
@@ -469,9 +469,12 @@ export function pdfLoader(){
 
 }
 
-firstElementWithClass('delete_pdfs').addEventListener('click', event => {
-  if ( confirm('Wollen Sie alle PDFs aus dem Browser entfernen?') ){
-    Idb.clear();
+firstElementWithClass('delete_pdfs').addEventListener('click', async event => {
+  if ( confirm('Wollen Sie alle gespeicherten Dateien aus dem Browser entfernen?') ){
+    for ( const key of await Idb.keys() ){
+      if ( key === config.configIdentifier ) continue;
+      Idb.del( key );
+    }
     firstElementWithClass('delete_pdfs').parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
   }
 });
