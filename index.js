@@ -519,7 +519,7 @@ export const configImportHandler = async event => {
     fileContents = await file.text();
     
   } else {
-    const url = prompt('URL des Profil-Archivs?', `${location.origin}/data/profile.zip`);
+    const url = prompt('URL des Profil-Archivs?', `${location.origin}/quick-fill-20/data/profile.zip`);
     if ( url ){
       const result = await loadAndDecryptArchive( url );
       if ( result ){
