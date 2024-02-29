@@ -259,18 +259,25 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
 } );
 
 /**
- * @summary load Zip Archive from URL, decrypt all files from Zip Archive and save each of them into IndexedDB
+ * @summary derive URL of Zip Archive from fileName
  * @param {String} fileName - name of the zip archive
  */
-export async function loadAndDecryptArchive( fileName ){
+function archiveUrlFromFileName( fileName ){
   const pathArray = window.location.pathname.split('/');
   pathArray.pop();
   const prefix = pathArray.join('/');
   const longFileName = fileName ? fileName.match(/^https?/i) ? fileName : `${window.location.origin}${prefix}/data/${fileName}` : `${window.location.origin}${prefix}/data/`;
   const url = fileName ? longFileName : prompt(`Bitte URL eingeben oder abbrechen!`, longFileName);
-  
+  return url;
+}
+
+/**
+ * @summary load Zip Archive from URL, decrypt all files from Zip Archive and save each of them into IndexedDB
+ * @param {String} fileName - name of the zip archive
+ */
+export async function loadAndDecryptArchive( fileName ){
+  const url = archiveUrlFromFileName( fileName );  
   if ( url ){
-    const fileName = url.split('/').pop();
     const abortButton = document.querySelector(".cloud_abort");
     abortButton.classList.remove('hide');
     const controller = new AbortController();
@@ -296,18 +303,23 @@ export async function loadAndDecryptArchive( fileName ){
       const jsZip = new JSZip();
       const zip = await jsZip.loadAsync( arrayBuffer );
       const password = passwordForEncyption ? passwordForEncyption : prompt(`Passwort für ${url}?`);
-      for ( const singleFileName of Object.keys( zip.files ) ){
-        if ( singleFileName.startsWith('__MAC') ) continue;
-        // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
-        const encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
-        /** {ArrayBuffer} pdfData - decrypted content */
-        const pdfData = await BrowserCrypto.decrypt( encryptedPdfData, password );
-        if ( ! pdfData ) break; // wrong password 
-        const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
-        const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
-        await Idb.set( key, new Uint8Array( pdfData ) );
-        managePdfList( key, { name: singleFileName } );
-        result.push( key );
+      if ( password ){
+        for ( const singleFileName of Object.keys( zip.files ) ){
+          // skip system files
+          if ( singleFileName.startsWith('__MAC') ) continue;
+          if ( singleFileName.startsWith('.') ) continue;
+          // get encrypted file contents
+          // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
+          const encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
+          /** {ArrayBuffer} pdfData - decrypted content */
+          const pdfData = await BrowserCrypto.decrypt( encryptedPdfData, password );
+          if ( ! pdfData ) break; // wrong password 
+          const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
+          const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
+          await Idb.set( key, new Uint8Array( pdfData ) );
+          managePdfList( key, { name: singleFileName } );
+          result.push( key );
+        }
       }
       return result;
     }
@@ -519,10 +531,10 @@ export const configImportHandler = async event => {
     fileContents = await file.text();
     
   } else {
-    const url = prompt('URL des Profil-Archivs?', `${location.origin}/quick-fill-20/data/profile.zip`);
+    const url = prompt('URL des Profil-Archivs?', archiveUrlFromFileName( 'profile.zip' ) );
     if ( url ){
       const result = await loadAndDecryptArchive( url );
-      if ( result ){
+      if ( result.length ){
         const firstKey = result[0]; // ToDo choose from array
         const uint8array = await Idb.get( firstKey );
         fileContents = new TextDecoder().decode( uint8array );
