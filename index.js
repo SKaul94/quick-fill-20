@@ -302,7 +302,7 @@ export async function loadAndDecryptArchive( fileName ){
       const result = [];
       const jsZip = new JSZip();
       const zip = await jsZip.loadAsync( arrayBuffer );
-      const password = passwordForEncyption ? passwordForEncyption : prompt(`Passwort für ${url}?`);
+      const password = passwordForEncyption ? passwordForEncyption : prompt(`Lade ${url}. Passwort?`);
       if ( password ){
         for ( const singleFileName of Object.keys( zip.files ) ){
           // skip system files
@@ -320,7 +320,11 @@ export async function loadAndDecryptArchive( fileName ){
           managePdfList( key, { name: singleFileName } );
           result.push( key );
         }
+      } else {
+        const last = Array.from( document.querySelectorAll('.invoke') ).pop();
+        last.remove();
       }
+      setAllLanguageSelectors();
       return result;
     }
   }
@@ -381,6 +385,7 @@ function managePdfList( key, pdfFile ){
   trashIcon.addEventListener('click', event => {
     if ( confirm('Wollen Sie diese Datei aus dem Browser entfernen?') ){
       Idb.del( key );
+      setAllLanguageSelectors();
       li.remove();
       if ( firstElementWithClass('loaded_pdfs')?.childElementCount === 0 ){
         firstElementWithClass('loaded_pdfs').innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
@@ -426,6 +431,7 @@ function pdfAllLoader(){
       await Idb.set( key, pdfBinary );
       managePdfList( key, pdfFile );
     }
+    setAllLanguageSelectors();
   };
 }
 
@@ -463,6 +469,7 @@ export function pdfLoader(){
       alert( `"${key}" already loaded. Please delete it first.` );
     } else {
       await Idb.set( key, new Uint8Array( await pdfFile.arrayBuffer() ));
+      setAllLanguageSelectors();
       managePdfList( key, pdfFile );
     }  
   };
@@ -475,6 +482,7 @@ firstElementWithClass('delete_pdfs').addEventListener('click', async event => {
       if ( key === config.configIdentifier ) continue;
       Idb.del( key );
     }
+    setAllLanguageSelectors();
     firstElementWithClass('delete_pdfs').parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
   }
 });
@@ -731,6 +739,34 @@ for ( const state of QuickFillAllStates ){
   });
 }
 
+async function allLanguages(){
+  const all_Languages = Array.from( new Set( ( await Idb.keys() ).map( filename_language_mapper ) ) );
+  return all_Languages;
+}
+
+async function setAllLanguageSelectors(){
+  const lastLanguage = localStorage.getItem('quickfill_xml_language');
+  for ( const language_selector of document.querySelectorAll('.language_selector') ){
+    language_selector.innerHTML = `
+      <option value="">--Bitte auswählen:--</option>
+      <option value="englisch">englisch</option>
+    `;
+    if ( lastLanguage && ( lastLanguage !== 'englisch' ) ){
+      language_selector.innerHTML += `
+        <option value="${lastLanguage}">${lastLanguage}</option>
+    `;
+    }
+    for ( const language of await allLanguages() ){
+      if ( language !== 'englisch' && language !== lastLanguage ){
+        const option = document.createElement('option');
+        option.innerText = language;
+        option.value = language;
+        language_selector.appendChild(option);
+      }
+    }
+  }
+}
+
 async function switchToState( state ){
   if ( state === currentState && isVisible( state ) ) return;
   const basicUrl = document.location.origin + document.location.pathname;
@@ -742,8 +778,8 @@ async function switchToState( state ){
   for ( const showElement of document.querySelectorAll( '.' + state ) ){
     showElement.classList.remove('hide');
   }
-  const all_loaded_pdfs = (await Idb.keys()); // .filter( key => key.includes('_') );
-  const allLanguages = Array.from( new Set( all_loaded_pdfs.map( filename_language_mapper ) ) );
+  const all_loaded_pdfs = await Idb.keys(); // .filter( key => key.includes('_') );
+  const all_languages = await allLanguages();
   switch ( state ){
     case 'pdf_loader':
       const list = firstElementWithClass('loaded_pdfs');
@@ -757,18 +793,10 @@ async function switchToState( state ){
         firstElementWithClass('save_all').classList.add('hide');
         firstElementWithClass('print_all').classList.add('hide');
       }
-      for ( const language_selector of document.querySelectorAll('.language_selector') ){
-        language_selector.innerHTML = '<option value="">--Bitte auswählen:--</option>';
-        for ( const language of allLanguages ){
-          const option = document.createElement('option');
-          option.innerText = language;
-          option.value = language;
-          language_selector.appendChild(option);
-        }
-      }
+      await setAllLanguageSelectors();
       const language_selector = document.getElementById('language_selector');
       const language = localStorage.getItem('quickfill_xml_language') || 'englisch'; 
-      if ( allLanguages.includes( language ) ){
+      if ( all_languages.includes( language ) ){
         language_selector.value = language;
         localStorage.setItem('quickfill_xml_language', language);
       }
