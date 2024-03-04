@@ -321,8 +321,7 @@ export async function loadAndDecryptArchive( fileName ){
           result.push( key );
         }
       } else {
-        const last = Array.from( document.querySelectorAll('.invoke') ).pop();
-        last.remove();
+        XMLInterpreter.resetLastInvokation();
       }
       setAllLanguageSelectors();
       return result;
@@ -356,6 +355,7 @@ firstElementWithClass('interprete_xml_clipboard')?.addEventListener('click', asy
 } );
 
 language_selector.addEventListener('change', event => {
+  event.target.selected = true;
   localStorage.setItem('quickfill_xml_language', event.target.value);
 });
 
@@ -758,6 +758,7 @@ async function setAllLanguageSelectors(){
     }
     for ( const language of await allLanguages() ){
       if ( language !== 'englisch' && language !== lastLanguage ){
+        if ( language === 'profile' ) continue;
         const option = document.createElement('option');
         option.innerText = language;
         option.value = language;
