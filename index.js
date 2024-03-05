@@ -329,30 +329,45 @@ export async function loadAndDecryptArchive( fileName ){
   }
 };
 
-firstElementWithClass('interprete_xml_file')?.addEventListener('click', async function(event){
-  event.target.disabled = true;
-  const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
-  try {
-    await interpreter.interpretFile( event );
-  } catch (error) {
-    console.log('file selection cancelled or error in selected file:', error );
-  } finally {
-    event.target.removeAttribute('disabled');
-  }  
-} );
+firstElementWithClass('interprete_xml_file')?.addEventListener('click',
+  interpretXMLListener( async interpreter =>  interpreter.interpretFile(), 
+  `file selection cancelled or error in selected file` ) );
 
-firstElementWithClass('interprete_xml_clipboard')?.addEventListener('click', async function(event){
-  event.target.disabled = true;
-  const clipBoardText = await navigator.clipboard.readText();
-  const interpreter = new XMLInterpreter( this, document.getElementById('xml_analyse') );
-  try {
-    await interpreter.interpretClipBoard( clipBoardText );
-  } catch (error) {
-    console.log(`invalid clipboard buffer content: probably not XML: "${clipBoardText}"`);
-  } finally {
-    event.target.removeAttribute('disabled');
-  }  
-} );
+firstElementWithClass('interprete_xml_clipboard')?.addEventListener('click', 
+  interpretXMLListener( async interpreter => interpreter.interpretClipBoard( await navigator.clipboard.readText() ) 
+  `invalid clipboard buffer content: probably not XML` ) );
+
+function interpretXMLListener( interpreterCallback, errorMessage ){
+  return async event => {
+    event.target.disabled = true;
+    const cancelButton = document.getElementById('interprete_xml_cancel');
+    const interpreter = new XMLInterpreter( event.target, document.getElementById('xml_analyse') );
+    const myCancelEventListener = cancelEventListener( interpreter );
+    cancelButton?.addEventListener('click', myCancelEventListener ); 
+    try {
+      await interpreterCallback( interpreter );
+    } catch ( error ) {
+      alert( error );
+      console.error( error );
+    } finally {
+      event.target.removeAttribute('disabled');
+      if ( ! interpreter.stop ) cancelButton?.removeEventListener( 'click', myCancelEventListener );
+    } 
+  };
+} 
+
+function cancelEventListener( interpreter ){
+  return event => {
+    const button = document.getElementById('interprete_xml_cancel');
+    if ( button.innerText === 'Abbrechen' ){
+      interpreter.cancel();
+      button.innerText = 'Fortfahren';
+    } else {
+      interpreter.proceed();
+      button.innerText = 'Abbrechen';
+    }
+  };
+}
 
 language_selector.addEventListener('change', event => {
   event.target.selected = true;
@@ -741,7 +756,7 @@ for ( const state of QuickFillAllStates ){
 
 async function allLanguages(){
   const all_Languages = Array.from( new Set( ( await Idb.keys() ).map( filename_language_mapper ) ) );
-  return all_Languages;
+  return all_Languages.filter( name => name !== 'profile' );
 }
 
 async function setAllLanguageSelectors(){
