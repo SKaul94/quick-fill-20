@@ -587,16 +587,16 @@ function mergeConfigAndReload( fileContents ){
 export const configExportHandler = event => {
   ProfileEditor.updateConfig({});
   const json = jsonStringifyWithFunctions( config, 2 );
-  const blob = new Blob([json], {type: "application/json"});
+  const blob = new Blob([json], {type: "text/plain"});
   fileSave( blob, {
     // Suggested file name to use, defaults to `''`.
-    fileName: 'config.json',
+    fileName: 'name_profile.txt',
     // Suggested file extensions (with leading '.'), defaults to `''`.
-    extensions: ['.json'],
+    extensions: ['.txt'],
     // Suggested directory in which the file picker opens. A well-known directory or a file handle.
     startIn: 'downloads',
     // By specifying an ID, the user agent can remember different directories for different IDs.
-    id: 'config',
+    id: 'downloads',
     // Include an option to not apply any filter in the file picker, defaults to `false`.
     excludeAcceptAllOption: false,
   });
