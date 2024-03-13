@@ -10433,26 +10433,51 @@ class StampEditor extends editor_editor.AnnotationEditor {
       this.#bitmapPromise = this._uiManager.imageManager.getFromFile(file).then(data => this.#getBitmapFetched(data)).finally(() => this.#getBitmapDone());
       return;
     }
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = StampEditor.supportedTypesStr;
-    this.#bitmapPromise = new Promise(resolve => {
-      input.addEventListener("change", async () => {
-        if (!input.files || input.files.length === 0) {
-          this.remove();
-        } else {
-          this._uiManager.enableWaiting(true);
-          const data = await this._uiManager.imageManager.getFromFile(input.files[0]);
-          this.#getBitmapFetched(data);
+    const getImageFromPasteBufferOrFile = async () => {
+      const auth = await navigator.permissions.query( { name: "clipboard-read" } );
+      if( auth.state !== 'denied' ) {
+        const item_list = await navigator.clipboard.read();
+        let image_type; // we will feed this later
+        const item = item_list.find( item => // choose the one item holding our image
+          item.types.some( type => { // does this item have our type
+            if( type.startsWith( 'image' ) ) {
+              image_type = type; // store which kind of image type it is
+              return true;
+            }
+          } )
+        );
+    
+        const blob = item && await item.getType( image_type );
+        if ( blob ){ // get from paste buffer
+          const url = URL.createObjectURL( blob );
+          const data = await this._uiManager.imageManager.getFromUrl( url );
+          this.#getBitmapFetched( data );
+          URL.revokeObjectURL( url );
+        } else { // get from file
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = StampEditor.supportedTypesStr;
+          this.#bitmapPromise = new Promise(resolve => {
+            input.addEventListener("change", async () => {
+              if (!input.files || input.files.length === 0) {
+                this.remove();
+              } else {
+                this._uiManager.enableWaiting(true);
+                const data = await this._uiManager.imageManager.getFromFile(input.files[0]);
+                this.#getBitmapFetched(data);
+              }
+              resolve();
+            });
+            input.addEventListener("cancel", () => {
+              this.remove();
+              resolve();
+            });
+          }).finally(() => this.#getBitmapDone());
+          input.click();  
         }
-        resolve();
-      });
-      input.addEventListener("cancel", () => {
-        this.remove();
-        resolve();
-      });
-    }).finally(() => this.#getBitmapDone());
-    input.click();
+      }  
+    }; 
+    getImageFromPasteBufferOrFile();
   }
   remove() {
     if (this.#bitmapId) {
