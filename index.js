@@ -806,8 +806,8 @@ async function switchToState( state ){
       break;
     case 'xml':
       if ( PdfDoc.all.length === 0 ){
-        firstElementWithClass('save_all').classList.add('hide');
-        firstElementWithClass('print_all').classList.add('hide');
+        firstElementWithClass('save_all')?.classList.add('hide');
+        firstElementWithClass('print_all')?.classList.add('hide');
       }
       await setAllLanguageSelectors();
       const language_selector = document.getElementById('language_selector');
