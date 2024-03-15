@@ -460,7 +460,7 @@ function managePdfList( key, pdfFile ){
   li.dataset.key = key;
   const suffix = key.match(/profil/i) ? '.txt' : '.pdf';
   li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span class="spacy_width" title="Löschen">${trashWhiteIconSVG}</span>`;
-  li.innerHTML += `<span class="spacy_width" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>
+  li.innerHTML += `
     <span class="spacy_width" title="Profil von lokaler Platte laden">${uploadSVG}</span>
     <span class="spacy_width" title="Profil auf lokale Platte speichern">${downloadSVG}</span>
     <span class="spacy_width" title="Profil verschlüsseln">${keyPlusSVG}</span>
@@ -468,9 +468,10 @@ function managePdfList( key, pdfFile ){
     <input type="password" class="password spacy_width hide" placeholder="Passwort" title="Individuelles Passwort festlegen">
     <input type="checkbox" class="password_visibiliy hide" title="Passwort sichtbar machen">
     <button class="encrypt hide">encrypt</button>
-    <button class="decrypt hide">decrypt</button>`
+    <button class="decrypt hide">decrypt</button>`;
+  if (key.match(/profil/i)) li.innerHTML += `<span class="spacy_width" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>`;  
   
-  const [trashIcon, configIcon, uploadIcon, downloadIcon, keyPlusIcon, keyMinusIcon] = Array.from(li.querySelectorAll('svg'));
+  const [trashIcon, uploadIcon, downloadIcon, keyPlusIcon, keyMinusIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
 
   const passwordVisibility = li.querySelector('input.password_visibiliy');
   const encryptButton = li.querySelector('button.encrypt');
