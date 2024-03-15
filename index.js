@@ -461,10 +461,10 @@ function managePdfList( key, pdfFile ){
   const suffix = key.match(/profil/i) ? '.txt' : '.pdf';
   li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span class="spacy_width" title="Löschen">${trashWhiteIconSVG}</span>`;
   li.innerHTML += `
-    <span class="spacy_width" title="Profil von lokaler Platte laden">${uploadSVG}</span>
-    <span class="spacy_width" title="Profil auf lokale Platte speichern">${downloadSVG}</span>
-    <span class="spacy_width" title="Profil verschlüsseln">${keyPlusSVG}</span>
-    <span class="spacy_width" title="Profil entschlüsseln">${keyMinusSVG}</span>
+    <span class="spacy_width" title="von lokaler Platte laden">${uploadSVG}</span>
+    <span class="spacy_width" title="auf lokale Platte speichern">${downloadSVG}</span>
+    <span class="spacy_width" title="mit Passwort verschlüsseln">${keyPlusSVG}</span>
+    <span class="spacy_width" title="mit Passwort entschlüsseln">${keyMinusSVG}</span>
     <input type="password" class="password spacy_width hide" placeholder="Passwort" title="Individuelles Passwort festlegen">
     <input type="checkbox" class="password_visibiliy hide" title="Passwort sichtbar machen">
     <button class="encrypt hide">encrypt</button>
