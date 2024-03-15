@@ -45,6 +45,10 @@ object, iframe {
   margin: 1rem 0;
 }
 
+.spacy_width {
+  margin: 0 0.3rem;
+}
+
 .bold {
   font-size: larger;
   font-weight: bolder;

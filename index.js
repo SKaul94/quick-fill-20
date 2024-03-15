@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG, openViewSVG} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG, personPlusSVG, keyPlusSVG, keyMinusSVG, uploadSVG, downloadSVG} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -190,6 +190,34 @@ firstElementWithClass('load_all_pdf')?.addEventListener('click', pdfAllLoader() 
 firstElementWithClass('load_zip')?.addEventListener('click', pdfZipLoader() );
 firstElementWithClass('cloud_load')?.addEventListener('click', async event => loadAndDecryptArchive() );
 
+document.getElementById('add_file_to_list')?.addEventListener('click', async event => {
+  const fileHandles = await fileOpen( {
+      // List of allowed MIME types, defaults to `*/*`.
+      mimeTypes: ['text/plain', 'application/pdf'],
+      // List of allowed file extensions (with leading '.'), defaults to `''`.
+      extensions: [ '.txt', '.pdf' ],
+      // Set to `true` for allowing multiple files, defaults to `false`.
+      multiple: true,
+      // Textual description for file dialog , defaults to `''`.
+      description: `Lade Datei von der lokalen Platte`,
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'downloads',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+  } );
+  for ( const fileHandle of fileHandles ){
+    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
+    const fileNameComponents = file.name.split('.');
+    fileNameComponents.pop();
+    const key = fileNameComponents.join('.');
+    const binaryContents = await file.arrayBuffer();
+    Idb.set( key, new Uint8Array( binaryContents ) );
+    managePdfList( key, file );
+  }
+});
+
 /**
  * @summary ask for password
  */
@@ -211,7 +239,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
   const password = passwordForEncyption;
   if ( ! password ) { alert('Zuerst Passwort festlegen!'); return; }
   if ( (await Idb.keys()).length === 0) { alert('Zuerst PDFs laden!'); return; }
-  const defaultFileName = new Date().toLocaleString("de-DE", {timeZone: "Europe/Berlin"}).split(', ').join('_') + "-all-encrypted.zip";
+  const defaultFileName = "all-crypted.zip";
 
   // create a new file handle before time consuming encryption
   let newHandle;
@@ -239,7 +267,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
 
   for ( const [ key, pdfBinary ] of await Idb.entries() ){
     const encryptedPdfData = await BrowserCrypto.encrypt( pdfBinary, password );
-    const fileName = key.match(/[-_]profile$/i) ? `${key}.txt` : `${key}.pdf`;
+    const fileName = key.match(/profil/i) ? `${key}.txt` : `${key}.pdf`;
     zip.file( fileName, encryptedPdfData, { binary: true } );
   }
 
@@ -254,7 +282,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
   // close the file and write the contents to disk.
   await writableStream.close();
 
-  alert( `Verschlüselt gesichert unter ${file.name}.` );
+  alert( `Mit "${password}" verschlüselt gesichert unter ${file.name}.` );
 
 } );
 
@@ -388,6 +416,40 @@ export function kindOfPDF_language( pdfFileName ){
   return [ kindOfPDF, language ];
 }
 
+const visiblityListener = event => {
+  const li = event.target.parentElement;
+  const passwordElement = li.querySelector('.password');
+  passwordElement.type = passwordElement.type === 'password' ? 'text' : 'password';
+};
+const enryptListener = async event => {
+  const li = event.target.parentElement;
+  const key = li.dataset.key;
+  const uint8array = await Idb.get( key );
+  const password = li.querySelector('.password')?.value || prompt(`Passwort für die Verschlüsselung von ${key}?`);
+  if ( password ){
+    const encryptedData = await BrowserCrypto.encrypt( uint8array, password );
+    Idb.set( key, encryptedData );
+    alert(`${key} wurde mit "${password}" zusätzlich verschlüsselt.`);
+  }
+  li.querySelector('.password')?.classList.add('hide');
+  li.querySelector('.password_visibiliy')?.classList.add('hide');
+  li.querySelector('button.encrypt')?.classList.add('hide');
+};
+const decryptListener = async event => {
+  const li = event.target.parentElement;
+  const key = li.dataset.key;
+  const uint8array = await Idb.get( key );
+  const password = li.querySelector('.password')?.value || prompt(`Passwort für die Verschlüsselung von ${key}?`);
+  if ( password ){
+    const decryptedData = await BrowserCrypto.decrypt( uint8array, password );
+    Idb.set( key, new Uint8Array( decryptedData ) );
+    alert(`${key} wurde mit "${password}" entschlüsselt.`);
+  }
+  li.querySelector('.password')?.classList.add('hide');
+  li.querySelector('.password_visibiliy')?.classList.add('hide');
+  li.querySelector('button.decrypt')?.classList.add('hide');
+};
+
 /**
  * @summary add a list item to the list of loaded PDFs
  * @param {String} key - index of IndexedDB store, where PDF binary is stored
@@ -395,8 +457,28 @@ export function kindOfPDF_language( pdfFileName ){
  */
 function managePdfList( key, pdfFile ){
   const li = document.createElement('li');
-  li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span title="Löschen">${trashWhiteIconSVG}</span>` + (key.match(/.profile/i)?`<span title="zur Konfiguration hinzu laden">${openViewSVG}<span>`:'');
-  const [trashIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
+  li.dataset.key = key;
+  const suffix = key.match(/profil/i) ? '.txt' : '.pdf';
+  li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span class="spacy_width" title="Löschen">${trashWhiteIconSVG}</span>`;
+  li.innerHTML += `<span class="spacy_width" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>
+    <span class="spacy_width" title="Profil von lokaler Platte laden">${uploadSVG}</span>
+    <span class="spacy_width" title="Profil auf lokale Platte speichern">${downloadSVG}</span>
+    <span class="spacy_width" title="Profil verschlüsseln">${keyPlusSVG}</span>
+    <span class="spacy_width" title="Profil entschlüsseln">${keyMinusSVG}</span>
+    <input type="password" class="password spacy_width hide" placeholder="Passwort" title="Individuelles Passwort festlegen">
+    <input type="checkbox" class="password_visibiliy hide" title="Passwort sichtbar machen">
+    <button class="encrypt hide">encrypt</button>
+    <button class="decrypt hide">decrypt</button>`
+  
+  const [trashIcon, configIcon, uploadIcon, downloadIcon, keyPlusIcon, keyMinusIcon] = Array.from(li.querySelectorAll('svg'));
+
+  const passwordVisibility = li.querySelector('input.password_visibiliy');
+  const encryptButton = li.querySelector('button.encrypt');
+  const decryptButton = li.querySelector('button.decrypt');
+  passwordVisibility.addEventListener('click', visiblityListener);
+  encryptButton.addEventListener('click', enryptListener);
+  decryptButton.addEventListener('click', decryptListener);
+  
   trashIcon.addEventListener('click', event => {
     if ( confirm('Wollen Sie diese Datei aus dem Browser entfernen?') ){
       Idb.del( key );
@@ -408,11 +490,60 @@ function managePdfList( key, pdfFile ){
     }
   });
   configIcon?.addEventListener('click', async event => {
-    if ( confirm('Wollen Sie diese Konfiguration dazu laden?') ){
+    if ( confirm(`Wollen Sie die Konfiguration ${key} dazu laden?`) ){
       const uint8array = await Idb.get( key );
       const fileContents = new TextDecoder().decode( uint8array );
       mergeConfigAndReload( fileContents );
     }
+  });
+  uploadIcon?.addEventListener('click', async event => {
+    const fileHandle = await fileOpen( {
+        // List of allowed MIME types, defaults to `*/*`.
+        mimeTypes: ['text/plain', 'application/pdf'],
+        // List of allowed file extensions (with leading '.'), defaults to `''`.
+        extensions: [ suffix ],
+        // Set to `true` for allowing multiple files, defaults to `false`.
+        multiple: false,
+        // Textual description for file dialog , defaults to `''`.
+        description: `Lade ${key}${suffix} von der lokalen Platte`,
+        // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+        startIn: 'downloads',
+        // By specifying an ID, the user agent can remember different directories for different IDs.
+        id: 'downloads',
+        // Include an option to not apply any filter in the file picker, defaults to `false`.
+        excludeAcceptAllOption: false,
+    } );
+    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
+    const binaryContents = await file.arrayBuffer();
+    Idb.set( key, new Uint8Array( binaryContents ) );
+    li.remove();
+    managePdfList( key, file );
+  });
+  downloadIcon?.addEventListener('click', async event => {
+    const uint8array = await Idb.get( key );
+      const blob = new Blob([uint8array], {type: "binary/octet-stream"});
+      fileSave( blob, {
+        // Suggested file name to use, defaults to `''`.
+        fileName: `${key}${suffix}`,
+        // Suggested file extensions (with leading '.'), defaults to `''`.
+        extensions: [ suffix ],
+        // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+        startIn: 'downloads',
+        // By specifying an ID, the user agent can remember different directories for different IDs.
+        id: 'downloads',
+        // Include an option to not apply any filter in the file picker, defaults to `false`.
+        excludeAcceptAllOption: false,
+      });
+  });
+  keyPlusIcon?.addEventListener('click', async event => {
+    li.querySelector('.password')?.classList.remove('hide');
+    li.querySelector('.password_visibiliy')?.classList.remove('hide');
+    li.querySelector('button.encrypt')?.classList.remove('hide');
+  });
+  keyMinusIcon?.addEventListener('click', async event => {
+    li.querySelector('.password')?.classList.remove('hide');
+    li.querySelector('.password_visibiliy')?.classList.remove('hide');
+    li.querySelector('button.decrypt')?.classList.remove('hide');
   });
   firstElementWithClass('loaded_pdfs')?.appendChild(li);
   firstElementWithClass('null_item')?.remove();
@@ -456,9 +587,9 @@ export function pdfLoader(){
 
       const pdfFileHandles = await fileOpen( {
         // List of allowed MIME types, defaults to `*/*`.
-        mimeTypes: ['application/pdf', 'application/json', 'text/plain'],
+        mimeTypes: ['application/pdf', 'text/plain'],
         // List of allowed file extensions (with leading '.'), defaults to `''`.
-        extensions: [ '.pdf', '.PDF', '.json', '.txt', '.TXT' ],
+        extensions: [ '.pdf', '.PDF', '.txt', '.TXT' ],
         // Set to `true` for allowing multiple files, defaults to `false`.
         multiple: false,
         // Textual description for file dialog , defaults to `''`.
@@ -498,7 +629,7 @@ firstElementWithClass('delete_pdfs').addEventListener('click', async event => {
       Idb.del( key );
     }
     setAllLanguageSelectors();
-    firstElementWithClass('delete_pdfs').parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
+    event.target.parentElement.parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
   }
 });
 
