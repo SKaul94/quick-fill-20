@@ -218,6 +218,37 @@ document.getElementById('add_file_to_list')?.addEventListener('click', async eve
   }
 });
 
+document.getElementById('generate_zip_archive')?.addEventListener('click', async event => {
+  const zip = new JSZip();
+  if ( (await Idb.keys()).length === 0) { alert('Zuerst PDFs laden!'); return; }
+  const defaultFileName = "profile.zip";
+
+  for ( const [ key, pdfBinary ] of await Idb.entries() ){
+    const fileName = key.match(/profil/i) ? `${key}.txt` : `${key}.pdf`;
+    zip.file( fileName, pdfBinary, { binary: true } );
+  }
+
+  const zipContent = await zip.generateAsync({type:"uint8array"});
+
+  const blob = new Blob([zipContent], {type: "application/x-zip"});
+
+  const file = await fileSave( blob, {
+      // Suggested file name to use, defaults to `''`.
+      fileName: defaultFileName,
+      // Suggested file extensions (with leading '.'), defaults to `''`.
+      extensions: ['.zip'],
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'downloads',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    });
+
+  alert( `ZIP-Archiv unverschlüselt gesichert unter ${file.name}.` );
+
+});
+
 /**
  * @summary ask for password
  */
