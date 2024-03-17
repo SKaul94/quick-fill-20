@@ -101,12 +101,17 @@
 
 <!-- Buttons in the profile view have class profile-->
 <button class="save profile hide" title="Speicher alle Regeln, alle Textbausteine im Browser">Save</button>
-<button class="import profile hide" title="Lade die gesamte Konfiguration aus lokaler Datei">Import</button>
+<button id="config_import" class="import profile hide" title="Lade die gesamte Konfiguration aus lokaler Datei">Import</button>
+<select size="3" name="select_profile" id="select_profile" class="hide">
+  <option value="">--Profil wählen:--</option>
+</select>
 <button class="export profile hide" title="Speicher die gesamte Konfiguration als lokale Datei">Export</button>
 <button class="reset profile hide" title="Auf Anfangszustand zurücksetzen">Reset</button>
+<button class="cloud_abort profile hide" title="Laden abbrechen">Abort</button>
 <label for="drag_switch" title="Reihenfolge der Regeln durch Verschieben" class="profile hide">
   <input id="drag_switch" type="checkbox">Drag and Drop
 </label>
+
 <!--
   <mwc-formfield class="drag_switch_label profile hide" label="Drag and Drop" title="Reihenfolge der Regeln durch Verschieben">
     <mwc-switch id="drag_switch"></mwc-switch>

@@ -317,6 +317,11 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
 
 } );
 
+const abortController = new AbortController();
+document.querySelector("body > .cloud_abort")?.addEventListener( 'click', event => {
+  abortController.abort(); 
+});
+
 /**
  * @summary derive URL of Zip Archive from fileName
  * @param {String} fileName - name of the zip archive
@@ -333,18 +338,17 @@ function archiveUrlFromFileName( fileName ){
 /**
  * @summary load Zip Archive from URL, decrypt all files from Zip Archive and save each of them into IndexedDB
  * @param {String} fileName - name of the zip archive
+ * @param {Boolean} decrypt - the archive is encrypted and has to be decrypted
  */
-export async function loadAndDecryptArchive( fileName ){
+export async function loadAndDecryptArchive( fileName, decrypt = true ){
   const url = archiveUrlFromFileName( fileName );  
   if ( url ){
-    const abortButton = document.querySelector(".cloud_abort");
-    abortButton.classList.remove('hide');
-    const controller = new AbortController();
-    const signal = controller.signal;
+    const abortButton = document.querySelector("body > .cloud_abort");
+    abortButton?.classList.remove('hide');
+    const signal = abortController.signal;
     const mode = config.pdfInitialLoadingMode; // cors, no-cors, *cors, same-origin
     const options = mode ? { signal, mode } : { signal };
-    const abortListener = event => { controller.abort() }
-    abortButton.addEventListener( 'click', abortListener );
+    
     let arrayBuffer;
 
     try {
@@ -355,33 +359,33 @@ export async function loadAndDecryptArchive( fileName ){
       console.error(`Error: ${error.message} while downloading ${url}`);
     } finally {
       abortButton.classList.add('hide');
-      abortButton.removeEventListener( 'click', abortListener );
     }
     if ( arrayBuffer ){
       const result = [];
       const jsZip = new JSZip();
       const zip = await jsZip.loadAsync( arrayBuffer );
-      const password = passwordForEncyption ? passwordForEncyption : prompt(`Lade ${url}. Passwort?`);
-      if ( password ){
-        for ( const singleFileName of Object.keys( zip.files ) ){
-          // skip system files
-          if ( singleFileName.startsWith('__MAC') ) continue;
-          if ( singleFileName.startsWith('.') ) continue;
-          // get encrypted file contents
-          // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
-          const encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
-          /** {ArrayBuffer} pdfData - decrypted content */
-          const pdfData = await BrowserCrypto.decrypt( encryptedPdfData, password );
-          if ( ! pdfData ) break; // wrong password 
-          const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
-          const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
-          await Idb.set( key, new Uint8Array( pdfData ) );
-          managePdfList( key, { name: singleFileName } );
-          result.push( key );
-        }
-      } else {
-        XMLInterpreter.resetLastInvokation();
+      let password;
+      if ( decrypt ) password = passwordForEncyption ? passwordForEncyption : prompt(`Lade ${url}. Passwort?`);
+      
+      for ( const singleFileName of Object.keys( zip.files ) ){
+        // skip system files
+        if ( singleFileName.startsWith('__MAC') ) continue;
+        if ( singleFileName.startsWith('.') ) continue;
+        // get encrypted file contents
+        // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
+        let encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
+        /** {ArrayBuffer} pdfData - decrypted content */
+        const pdfData = decrypt ? await BrowserCrypto.decrypt( encryptedPdfData, password ) : encryptedPdfData;
+        if ( ! pdfData ) break; // wrong password 
+        const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
+        const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
+        await Idb.set( key, new Uint8Array( pdfData ) );
+        managePdfList( key, { name: singleFileName } );
+        result.push( key );
       }
+    
+      // XMLInterpreter.resetLastInvokation();
+      
       setAllLanguageSelectors();
       return result;
     }
@@ -697,54 +701,105 @@ export const configSilentSaveHandler = async event => {
   saveInitialLists({silent: true});
 };
 
+const profileSelector = document.getElementById('select_profile');
+profileSelector?.addEventListener('change', async event => {
+  const selectedValue = event.target.value;
+  if ( selectedValue ){
+    const encryptedUInt8Array = await Idb.get( selectedValue );
+    let decryptedUInt8Array;
+    if ( selectedValue.match(/mustermann/i) ){ // Mustermann does not need a Password
+      decryptedUInt8Array = encryptedUInt8Array;
+    } else {
+      const individualPassword = prompt(`Individuelles Passwort für ${selectedValue}?`);
+      decryptedUInt8Array = await BrowserCrypto.decrypt( encryptedUInt8Array, individualPassword );
+    }
+    const fileContents = new TextDecoder().decode( decryptedUInt8Array );
+    if ( fileContents ){
+      mergeConfigAndReload( fileContents );
+      alert(`Profil ${selectedValue} wurde importiert.`);
+    }
+  } else {
+    alert('Es wurde kein Profil ausgewählt.');
+  }
+  profileSelector.classList.add('hide');
+  document.getElementById('config_import')?.removeAttribute('disabled');
+});
+
 export const configImportHandler = async event => {
+  document.getElementById('config_import').disabled = true;
+  // unreliable disabled = true, is in conflict with FileOpener user gesture immediacy
+  // await new Promise( resolve => requestAnimationFrame( _=> requestAnimationFrame( resolve ) ) );
   let fileContents;
   if ( confirm( 'Import von lokaler Datei?' ) ){
     const fileHandle = await fileOpen( {
       // List of allowed MIME types, defaults to `*/*`.
-      mimeTypes: ['application/json', 'text/plain', 'application/x-javascript', 'text/javascript'],
+      mimeTypes: [ 'text/plain' ],
       // List of allowed file extensions (with leading '.'), defaults to `''`.
-      extensions: [ '.json', '.js', '.txt' ],
+      extensions: [ '.txt' ],
       // Set to `true` for allowing multiple files, defaults to `false`.
       multiple: false,
       // Textual description for file dialog , defaults to `''`.
-      description: 'QuickFill Configuration',
+      description: 'QuickFill Configuration importieren',
       // Suggested directory in which the file picker opens. A well-known directory or a file handle.
       startIn: 'downloads',
       // By specifying an ID, the user agent can remember different directories for different IDs.
-      id: 'config',
+      id: 'downloads',
       // Include an option to not apply any filter in the file picker, defaults to `false`.
       excludeAcceptAllOption: false,
     } );
     const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
     fileContents = await file.text();
-    
+    if ( fileContents ){
+      mergeConfigAndReload( fileContents );
+    } 
+    document.getElementById('config_import')?.removeAttribute('disabled');
   } else {
     const url = prompt('URL des Profil-Archivs?', archiveUrlFromFileName( 'profile.zip' ) );
     if ( url ){
-      const result = await loadAndDecryptArchive( url );
-      if ( result.length ){
-        const firstKey = result[0]; // ToDo choose from array
-        const uint8array = await Idb.get( firstKey );
-        fileContents = new TextDecoder().decode( uint8array );
-      }     
-    }
+      // Archive is not encrypted, but files are encrypted with different passwords
+      // Therefore, do not decrypt archive.
+      const result = await loadAndDecryptArchive( url, false );
+      if ( result.length ){ 
+        // delete old options
+        profileSelector.innerHTML = `<option value="">--Profil wählen:--</option>`;
+        // create new options
+        for ( const key of result ){
+          const option = document.createElement('option');
+          option.value = key;
+          option.innerText = key;
+          profileSelector.appendChild( option );
+        }
+        profileSelector.classList.remove('hide');
+      } else {
+        document.getElementById('config_import')?.removeAttribute('disabled');
+      }  
+    } else {
+      document.getElementById('config_import')?.removeAttribute('disabled');
+    } 
   }
-  if ( fileContents ){
-    mergeConfigAndReload( fileContents );
-  } 
 };
 
 function mergeConfigAndReload( fileContents ){
   const quickFillConfig = jsonParseWithFunctions( fileContents );
-  const mergedObjects = mergeObjects( config, quickFillConfig );
-  mergedObjects.version = mergedObjects.version.split('.').map( (num,i) => i==1?parseInt(num)+1:num ).join('.');  
-  Idb.set(config.configIdentifier, jsonStringifyWithFunctions( mergedObjects ) );
-  location.reload();  // loading quickFillConfig from IndexedDB automatically
-  // Object.assign( config, quickFillConfig );
-  // for (const profileEditor of ProfileEditor.all){
-  //   profileEditor.update();
-  // }
+  if ( quickFillConfig ){
+    const mergedObjects = mergeObjects( config, quickFillConfig );
+    mergedObjects.version = mergedObjects.version.split('.').map( (num,i) => i==1?parseInt(num)+1:num ).join('.'); 
+    setAndLoad();
+    async function setAndLoad(){
+      // wait for IndexedDB to be ready, before reload of page
+      await Idb.set(config.configIdentifier, jsonStringifyWithFunctions( mergedObjects ) );
+      // load quickFillConfig from IndexedDB automatically, when loading
+      location.reload(); 
+      // Instead of reload: 
+      // Object.assign( config, quickFillConfig );
+      // for (const profileEditor of ProfileEditor.all){
+      //   profileEditor.update();
+      // } 
+    } 
+  } else {
+    alert('Import fehlgeschlagen.');
+    debugger;
+  } 
 }
 
 export const configExportHandler = event => {
@@ -985,6 +1040,7 @@ async function switchToState( state ){
       await PdfDoc.updateAll();
       break;
     case 'profile':
+      document.querySelector('body > .cloud_abort')?.classList.add('hide');
       Rule.DB.updateAllFields();
       break;
     case 'help':
