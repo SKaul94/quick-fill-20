@@ -891,6 +891,7 @@ export async function addSinglePDF( params ){
   const pdfFile = entry instanceof File ? entry : await entry.getFile();
   const htmlSpace = PdfDoc.createHTMLSpace( mode );
   const pdfDoc = new PdfDoc( pdfFile, htmlSpace );
+  await pdfDoc.waitForState('constructed');
 
   const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
   const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile.name );

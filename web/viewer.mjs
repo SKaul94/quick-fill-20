@@ -9870,6 +9870,8 @@ class PDFPrintService {
     wrapper.className = "printedPage";
     wrapper.append(img);
     this.printContainer.append(wrapper);
+    // remember generated print images
+    if ( this.pdfDocument.printImages ) this.pdfDocument.printImages.push( img );
     return new Promise(function (resolve, reject) {
       img.onload = resolve;
       img.onerror = reject;

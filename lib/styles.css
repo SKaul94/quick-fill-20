@@ -49,6 +49,11 @@ object, iframe {
   margin: 0 0.3rem;
 }
 
+.printed_page {
+  width: 100%;
+  height: auto;
+}
+
 .bold {
   font-size: larger;
   font-weight: bolder;
