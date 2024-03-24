@@ -1392,14 +1392,14 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
 
   function updateFulltext( event ){
     configEditorContents.innerText = jsonStringifyWithFunctions( config, 2 );
-    Idb.set( 'quickFillConfig', config );
+    Idb.set( 'quickFillConfig', jsonStringifyWithFunctions( config ) );
   }
 
   function blurListener( event ){
     const config_json = configEditorContents.innerText;
     const newConfig = jsonParseWithFunctions( config_json );
     Object.assign( config, newConfig );
-    Idb.set( 'quickFillConfig', config );
+    Idb.set( 'quickFillConfig', jsonStringifyWithFunctions( config ) );
     // Rule.DB.load();
     // for ( const profileEditor of ProfileEditor.all ){
     //   profileEditor.update();
