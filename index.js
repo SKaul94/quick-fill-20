@@ -1345,17 +1345,54 @@ document.querySelector('#rule_pretty_print>h2').addEventListener('click', event 
 /* * ***********  Configuration Editor ************* * */
 
 document.querySelector('#config_editor>h2').addEventListener('click', event => {
-  const configEditorDiv = document.querySelector('#config_editor > div');
+  const configPropertyEditorDiv = document.querySelector('#config_editor > div.properties');
+  configPropertyEditorDiv.innerHTML = `<fieldset><legend>config.js Input Fields</legend><ul></ul></fieldset>
+    <button class="import">Import</button>
+    <button class="export">Export</button>
+  `;
+  const propertyList = configPropertyEditorDiv.querySelector('ul');
+  for ( const [ key, value ] of Object.entries( config ) ){
+    const li = document.createElement('li');
+    let input;
+    switch ( typeof value ) {
+      case 'boolean': 
+        li.innerHTML = `${key}: <input id="config_${key}" type="checkbox">`;
+        propertyList.append( li );
+        input = li.querySelector('input');
+        input.checked = value;
+        input.addEventListener('change', event => { config[key] = input.checked; updateFulltext(); });
+        break;
+      case 'string':
+        li.innerHTML = `${key}: <input id="config_${key}" type="text">`;
+        propertyList.append( li );
+        input = li.querySelector('input');
+        input.value = value;
+        input.addEventListener('input', event => { config[key] = input.value; updateFulltext(); });
+        break; 
+      case 'number':
+        li.innerHTML = `${key}: <input id="config_${key}" type="number">`;
+        propertyList.append( li );
+        input = li.querySelector('input');
+        input.value = value;
+        input.addEventListener('input', event => { config[key] = input.value; updateFulltext(); });
+        break;
+      default:   
+    }
+  }
+  const configEditorDiv = document.querySelector('#config_editor > div.fulltext');
   const config_json = jsonStringifyWithFunctions( config, 2 );
-  configEditorDiv.innerHTML = `<div contenteditable>
+  configEditorDiv.innerHTML = `<fieldset><legend>config.js Fulltext Editor</legend><div contenteditable>
       <pre>${config_json}</pre>
       </div>
-      <button class="import">Import</button>
-      <button class="export">Export</button>
+      </fieldset>
     `;
   const configEditorContents = configEditorDiv.querySelector('pre');
   const importButton = document.querySelector('#config_editor .import');
   const exportButton = document.querySelector('#config_editor .export');
+
+  function updateFulltext(){
+    configEditorContents.innerText = jsonStringifyWithFunctions( config, 2 );
+  }
 
   configEditorContents.addEventListener('blur', event => {
     const config_json = configEditorContents.innerText;
