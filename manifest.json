@@ -1,0 +1,18 @@
+{
+  "name":"QuickFill 2.0",
+  "short_name":"QuickFill",
+  "id":"QuickFill",
+  "start_url":"https://skaul94.github.io/quick-fill-20",
+  "scope":".",
+  "description":"QuickFill fills PDF forms automatically using rules",
+  "lang": "de-DE",
+  "theme_color":"#858585",
+  "background_color":"#2EC6FE",
+  "orientation":"any",
+  "display":"standalone",
+  "dir":"auto",
+  "icons":[
+    {"purpose":"maskable","sizes":"512x512","src":"image/icon512_maskable.png","type":"image/png"},
+    {"purpose":"any","sizes":"512x512","src":"image/icon512_rounded.png","type":"image/png"}
+  ]
+}
