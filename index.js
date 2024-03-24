@@ -1360,21 +1360,21 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
         propertyList.append( li );
         input = li.querySelector('input');
         input.checked = value;
-        input.addEventListener('change', event => { config[key] = input.checked; updateFulltext(); });
+        input.addEventListener('change', event => { config[key] = input.checked; updateFulltext( event ); });
         break;
       case 'string':
         li.innerHTML = `${key}: <input id="config_${key}" type="text">`;
         propertyList.append( li );
         input = li.querySelector('input');
         input.value = value;
-        input.addEventListener('input', event => { config[key] = input.value; updateFulltext(); });
+        input.addEventListener('input', event => { config[key] = input.value; updateFulltext( event ); });
         break; 
       case 'number':
         li.innerHTML = `${key}: <input id="config_${key}" type="number">`;
         propertyList.append( li );
         input = li.querySelector('input');
         input.value = value;
-        input.addEventListener('input', event => { config[key] = input.value; updateFulltext(); });
+        input.addEventListener('input', event => { config[key] = input.value; updateFulltext( event ); });
         break;
       default:   
     }
@@ -1390,25 +1390,28 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   const importButton = document.querySelector('#config_editor .import');
   const exportButton = document.querySelector('#config_editor .export');
 
-  function updateFulltext(){
+  function updateFulltext( event ){
     configEditorContents.innerText = jsonStringifyWithFunctions( config, 2 );
+    Idb.set( 'quickFillConfig', config );
   }
 
-  configEditorContents.addEventListener('blur', event => {
+  function blurListener( event ){
     const config_json = configEditorContents.innerText;
     const newConfig = jsonParseWithFunctions( config_json );
     Object.assign( config, newConfig );
     Idb.set( 'quickFillConfig', config );
-    Rule.DB.load();
-    for ( const profileEditor of ProfileEditor.all ){
-      profileEditor.update();
-    }
+    // Rule.DB.load();
+    // for ( const profileEditor of ProfileEditor.all ){
+    //   profileEditor.update();
+    // }
     // location.reload();
-  } );
+  }
 
-  importButton.addEventListener('click', configImportHandler );
+  configEditorContents.addEventListener( 'blur', blurListener );
 
-  exportButton.addEventListener('click', configExportHandler );
+  importButton.addEventListener( 'click', configImportHandler );
+
+  exportButton.addEventListener( 'click', configExportHandler );
   
   window.scrollBy(0, window.innerHeight / 3);
   configEditorDiv.focus();
