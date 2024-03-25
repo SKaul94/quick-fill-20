@@ -1424,18 +1424,3 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   configEditorDiv.focus();
   
 } );
-
-let lastAZRNumberRule;
-document.getElementById('azr_nummer')?.addEventListener('blur', event => {
-  const newRule = new Rule({
-    rule_type: 'equal', 
-    rule: 'E-Nummer', 
-    value: event.target.value, 
-    caseRule: true, 
-    owner: 'DGL'
-  });
-  Rule.DB.addRule( newRule );
-  Rule.DB.remove( lastAZRNumberRule ); // otherwise multiple rules would stack up 
-  lastAZRNumberRule = newRule;
-  PdfDoc.updateAll();
-});
