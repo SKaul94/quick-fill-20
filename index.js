@@ -289,7 +289,7 @@ firstElementWithClass('encrypt')?.addEventListener('click', async function(event
       ],
     });
   } catch (error) {
-    console.error(error);
+    console.error( `${error.name}`, error );
     // new user interaction needed to refresh showSaveFilePicker timeout
     // see @link https://www.extension.ninja/blog/post/solved-this-function-must-be-called-during-a-user-gesture/
   }
@@ -353,10 +353,15 @@ export async function loadAndDecryptArchive( fileName, decrypt = true ){
 
     try {
       const response = await fetch( url, options );  
-      if (response.ok) arrayBuffer = await response.arrayBuffer(); else alert( `Error: ${response.statusText}: "${url}"` );
+      if (response.ok){
+        arrayBuffer = await response.arrayBuffer();
+      } else {
+        console.error( `Error: ${response.statusText}: "${url}"` );
+        if ( response.status === 404 ) alert( `Falsche Adresse "${url}". Tippfehler?` );
+      } 
     } catch ( error ) {
-      alert( `Error: ${error.message} while downloading ${url}` );
       console.error(`Error: ${error.message} while downloading ${url}`);
+      if ( error.name !== 'AbortError' ) alert( `${url} konnte nicht geladen werden.` );
     } finally {
       abortButton.classList.add('hide');
     }
@@ -366,7 +371,8 @@ export async function loadAndDecryptArchive( fileName, decrypt = true ){
       const zip = await jsZip.loadAsync( arrayBuffer );
       let password;
       if ( decrypt ) password = passwordForEncyption ? passwordForEncyption : prompt(`Lade ${url}. Passwort?`);
-      
+      if ( ! password ) decrypt = false;
+
       for ( const singleFileName of Object.keys( zip.files ) ){
         // skip system files
         if ( singleFileName.startsWith('__MAC') ) continue;
@@ -410,8 +416,8 @@ function interpretXMLListener( interpreterCallback, errorMessage ){
     try {
       await interpreterCallback( interpreter );
     } catch ( error ) {
-      alert( error );
-      console.error( error );
+      console.error( `${error.name}`, error );
+      if ( error.name !== 'AbortError' ) alert( `Fehler in XML` ); 
     } finally {
       event.target.removeAttribute('disabled');
       if ( ! interpreter.stop ) cancelButton?.removeEventListener( 'click', myCancelEventListener );
@@ -648,7 +654,8 @@ export function pdfLoader(){
     const key = kindOfPDF && language ? `${kindOfPDF}_${language}` : pdfFileNameComponents.join('_');
 
     if ( await Idb.get( key ) ){
-      alert( `"${key}" already loaded. Please delete it first.` );
+      console.error( `${key} already loaded. Please delete first.` );
+      alert( `"${key}" ist bereits geladen. Bitte zuerst löschen!` );
     } else {
       await Idb.set( key, new Uint8Array( await pdfFile.arrayBuffer() ));
       setAllLanguageSelectors();
@@ -685,8 +692,8 @@ export const saveInitialLists = async ({silent}) => {
     if ( silent ) console.log( successMessage ); else alert( successMessage );
   } catch (error) {
     const failureMessage = 'Konnte leider nicht im Browser gespeichert werden.';
-    if ( silent ) console.log( failureMessage ); else alert( failureMessage );
-    console.error( error );
+    if ( silent ) console.log( failureMessage ); else if ( error.name !== 'AbortError' ) alert( failureMessage );
+    console.error( `${error.name}`, error );
     debugger;
   }
 };
@@ -713,8 +720,8 @@ profileSelector?.addEventListener('change', async event => {
       const individualPassword = prompt(`Individuelles Passwort für ${selectedValue}?`);
       decryptedUInt8Array = await BrowserCrypto.decrypt( encryptedUInt8Array, individualPassword );
     }
-    const fileContents = new TextDecoder().decode( decryptedUInt8Array );
-    if ( fileContents ){
+    if ( decryptedUInt8Array ){
+      const fileContents = new TextDecoder().decode( decryptedUInt8Array );
       mergeConfigAndReload( fileContents );
       alert(`Profil ${selectedValue} wurde importiert.`);
     }
@@ -1192,7 +1199,7 @@ export function importXML( textArea ){
     xmlDOM = new DOMParser().parseFromString(textArea.value, 'application/xml');
   } catch (e) {
     console.error(e);
-    alert(e);
+    if ( e.name !== 'AbortError' ) alert( `Fehler in XML` );
     xmlDOM = null;
   }
 
@@ -1417,3 +1424,18 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   configEditorDiv.focus();
   
 } );
+
+let lastAZRNumberRule;
+document.getElementById('azr_nummer')?.addEventListener('blur', event => {
+  const newRule = new Rule({
+    rule_type: 'equal', 
+    rule: 'E-Nummer', 
+    value: event.target.value, 
+    caseRule: true, 
+    owner: 'DGL'
+  });
+  Rule.DB.addRule( newRule );
+  Rule.DB.remove( lastAZRNumberRule ); // otherwise multiple rules would stack up 
+  lastAZRNumberRule = newRule;
+  PdfDoc.updateAll();
+});

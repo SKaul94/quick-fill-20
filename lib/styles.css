@@ -49,6 +49,15 @@ object, iframe {
   margin: 0 0.3rem;
 }
 
+.large {
+  font-size: large;
+  width: 20rem;
+}
+
+.azr-container {
+  margin: 0 0 0.5rem 0;
+}
+
 .printed_page {
   width: 100%;
   height: auto;
