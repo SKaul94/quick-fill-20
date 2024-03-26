@@ -20,7 +20,7 @@ body {
 
 object, iframe {
   display: block;
-  min-height: 35rem;
+  min-height: 60rem;
   height: 100%;
   width: 100%;
   border-right: thin solid black;
