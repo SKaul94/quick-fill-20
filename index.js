@@ -809,7 +809,34 @@ function mergeConfigAndReload( fileContents ){
   } 
 }
 
+/**
+ * export initialRulesList only
+ * @param {Event} event 
+ */
 export const configExportHandler = event => {
+  ProfileEditor.updateConfig({});
+  const initialRulesList = config.initialRulesList;
+  const json = JSON.stringify( { initialRulesList }, null, 2 );
+  const blob = new Blob([json], {type: "text/plain"});
+  fileSave( blob, {
+    // Suggested file name to use, defaults to `''`.
+    fileName: 'name_profile.txt',
+    // Suggested file extensions (with leading '.'), defaults to `''`.
+    extensions: ['.txt'],
+    // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+    startIn: 'downloads',
+    // By specifying an ID, the user agent can remember different directories for different IDs.
+    id: 'downloads',
+    // Include an option to not apply any filter in the file picker, defaults to `false`.
+    excludeAcceptAllOption: false,
+  });
+};
+
+/**
+ * export complete config with ALL properties
+ * @param {Event} event 
+ */
+export const configExportAllHandler = event => {
   ProfileEditor.updateConfig({});
   const json = jsonStringifyWithFunctions( config, 2 );
   const blob = new Blob([json], {type: "text/plain"});
@@ -1355,7 +1382,7 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
   const configPropertyEditorDiv = document.querySelector('#config_editor > div.properties');
   configPropertyEditorDiv.innerHTML = `<fieldset><legend>config.js Input Fields</legend><ul></ul></fieldset>
     <button class="import">Import</button>
-    <button class="export">Export</button>
+    <button class="export">Export All</button>
   `;
   const propertyList = configPropertyEditorDiv.querySelector('ul');
   for ( const [ key, value ] of Object.entries( config ) ){
@@ -1418,7 +1445,7 @@ document.querySelector('#config_editor>h2').addEventListener('click', event => {
 
   importButton.addEventListener( 'click', configImportHandler );
 
-  exportButton.addEventListener( 'click', configExportHandler );
+  exportButton.addEventListener( 'click', configExportAllHandler );
   
   window.scrollBy(0, window.innerHeight / 3);
   configEditorDiv.focus();
