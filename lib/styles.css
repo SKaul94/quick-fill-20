@@ -58,6 +58,14 @@ object, iframe {
   margin: 0 0 0.5rem 0;
 }
 
+.border-dashed {
+  background-color: #9dd2f6;
+  user-select: none;
+  padding: 0.3rem;
+  margin: 0.1rem;
+  border-style: dashed;
+}
+
 .inline {
   display: inline;
 }
