@@ -66,12 +66,9 @@ object, iframe {
   border-style: dashed;
 }
 
-.dirty {
-  font-style: italic;
-}
-
 .dirty * {
-  background-color: #9dd2f6;
+  font-style: italic;
+  font-weight: bolder;
   color: red;
 }
 
