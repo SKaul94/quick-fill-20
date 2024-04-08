@@ -81,6 +81,26 @@ object, iframe {
   height: auto;
 }
 
+.qr_code {
+  background-color: white;
+  border: thin solid black;
+  margin: 0.1rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.qr_code > h2 {
+  color: black;
+  text-align: center;
+}
+
+.qr_code > svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid blue;
+  margin: 1rem 0;
+}
+
 .bold {
   font-size: larger;
   font-weight: bolder;

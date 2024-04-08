@@ -35,7 +35,8 @@
     "idb-keyval": "^6.2.1",
     "jszip": "^3.10.1",
     "simple-keyboard": "^3.4.65",
-    "simple-keyboard-layouts": "^3.1.69"
+    "simple-keyboard-layouts": "^3.1.69",
+    "lean-qr": "^2.3.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",
