@@ -1027,7 +1027,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       let fieldFormattedValues = storedData.formattedValue || this.data.textContent?.join("\n") || null;
       if (fieldFormattedValues && this.data.comb) {
         fieldFormattedValues = fieldFormattedValues.replaceAll(/\s+/g, "");
-      } // fieldFormattedValues = textContent ? null : fieldFormattedValues; // new: if `textContent` has user's value `fieldFormattedValues` isn't needed
+      }
       const elementData = {
         userValue: textContent,
         formattedValue: fieldFormattedValues,
@@ -2835,7 +2835,7 @@ function getDocument(src) {
   }
   const fetchDocParams = {
     docId,
-    apiVersion: "4.1.367",
+    apiVersion: "4.1.409",
     data,
     password,
     disableAutoFetch,
@@ -4588,8 +4588,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "4.1.367";
-const build = "5adad89eb";
+const version = "4.1.409";
+const build = "0d148cc12";
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });
@@ -8625,7 +8625,6 @@ class FreeTextEditor extends editor_editor.AnnotationEditor {
   }
   onceAdded() {
     if (this.width) {
-      this.#cheatInitialRect();
       return;
     }
     this.enableEditMode();
@@ -9002,22 +9001,9 @@ class FreeTextEditor extends editor_editor.AnnotationEditor {
       value,
       fontSize,
       color,
-      rect,
       pageIndex
     } = this.#initialData;
-    return serialized.value !== value || serialized.fontSize !== fontSize || serialized.rect.some((x, i) => Math.abs(x - rect[i]) >= 1) || serialized.color.some((c, i) => c !== color[i]) || serialized.pageIndex !== pageIndex;
-  }
-  #cheatInitialRect(delayed = false) {
-    if (!this.annotationElementId) {
-      return;
-    }
-    this.#setEditorDimensions();
-    if (!delayed && (this.width === 0 || this.height === 0)) {
-      setTimeout(() => this.#cheatInitialRect(true), 0);
-      return;
-    }
-    const padding = FreeTextEditor._internalPadding * this.parentScale;
-    this.#initialData.rect = this.getRect(padding, padding);
+    return this._hasBeenMoved || serialized.value !== value || serialized.fontSize !== fontSize || serialized.color.some((c, i) => c !== color[i]) || serialized.pageIndex !== pageIndex;
   }
 }
 
@@ -10539,6 +10525,39 @@ class StampEditor extends editor_editor.AnnotationEditor {
       this.#bitmapPromise = this._uiManager.imageManager.getFromFile(file).then(data => this.#getBitmapFetched(data)).finally(() => this.#getBitmapDone());
       return;
     }
+    this.getFromPasteBufferOrFile();
+  }
+  async getFromPasteBufferOrFile(mimeType = 'image/') {
+    const auth = await navigator.permissions.query({
+      name: "clipboard-read"
+    });
+    if (auth.state !== 'denied') {
+      const item_list = await navigator.clipboard.read();
+      let image_type;
+      const item = item_list.find(item => item.types.some(type => {
+        if (type.startsWith(mimeType)) {
+          image_type = type;
+          return true;
+        }
+      }));
+      const result = item && (await item.getType(image_type));
+      if (result) {
+        this.#bitmapPromise = createImageBitmap(result).then(bitmap => {
+          const data = {
+            bitmap,
+            id: item.name
+          };
+          this._uiManager.enableWaiting(true);
+          this.#getBitmapFetched(data);
+        }).finally(() => this.#getBitmapDone());
+      } else {
+        this.getImageFromFile();
+      }
+    } else {
+      this.getImageFromFile();
+    }
+  }
+  getImageFromFile() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = StampEditor.supportedTypesStr;
@@ -11170,6 +11189,9 @@ class AnnotationEditorLayer {
     }
   }
   add(editor) {
+    if (editor.parent === this && editor.isAttachedToDOM) {
+      return;
+    }
     this.changeParent(editor);
     this.#uiManager.addEditor(editor);
     this.attach(editor);
@@ -11824,6 +11846,7 @@ class AnnotationEditor {
   #editToolbar = null;
   #focusedResizerName = "";
   #hasBeenClicked = false;
+  #initialPosition = null;
   #isEditing = false;
   #isInEditMode = false;
   #isResizerEnabledForKeyboard = false;
@@ -12049,12 +12072,14 @@ class AnnotationEditor {
     this.#translate(this.parentDimensions, x, y);
   }
   translateInPage(x, y) {
+    this.#initialPosition ||= [this.x, this.y];
     this.#translate(this.pageDimensions, x, y);
     this.div.scrollIntoView({
       block: "nearest"
     });
   }
   drag(tx, ty) {
+    this.#initialPosition ||= [this.x, this.y];
     const [parentWidth, parentHeight] = this.parentDimensions;
     this.x += tx / parentWidth;
     this.y += ty / parentHeight;
@@ -12080,6 +12105,9 @@ class AnnotationEditor {
     this.div.scrollIntoView({
       block: "nearest"
     });
+  }
+  get _hasBeenMoved() {
+    return !!this.#initialPosition && (this.#initialPosition[0] !== this.x || this.#initialPosition[1] !== this.y);
   }
   getBaseTranslation() {
     const [parentWidth, parentHeight] = this.parentDimensions;
@@ -18103,8 +18131,8 @@ _display_api_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.t
 
 
 
-const pdfjsVersion = "4.1.367";
-const pdfjsBuild = "5adad89eb";
+const pdfjsVersion = "4.1.409";
+const pdfjsBuild = "0d148cc12";
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });

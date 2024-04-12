@@ -18,7 +18,7 @@ gulp dist-install # generates distribution files and dist
 cp -ipr ./build/generic/* ../quick-fill-20 # copies relevant files into QuickFill Directory
 ```
 
-Otherwise simply use "pdfjs-dist": "^4.1.367" in dependencies in package.json.
+Otherwise simply use "pdfjs-dist": "^4.1.407" in dependencies in package.json.
 
 ## PDF.js Issue #16723
 `textContent` has the stored user's value and `fieldFormattedValues` look to has the default value, you can see that `fieldFormattedValues` has more precedence than `textContent`.
