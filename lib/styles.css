@@ -13,6 +13,21 @@ html * {
 .dark-mode a:hover { color: #952727; }
 .dark-mode a:active { color: #ff4040; text-decoration:none; font-weight:normal; }
 
+.tools > li:has(a) {
+  margin: 0.5rem 0.1rem;
+  padding: 0.1rem;
+}
+
+ol.tools {
+  counter-reset: item;
+  list-style-type: none;
+}
+
+ol.tools li:before {
+  content: '7.' counter(item, decimal) '. ';
+  counter-increment: item;
+}
+
 .center {
   text-align: center;
 }
