@@ -3,12 +3,15 @@ html * {
   font-family: Arial, sans-serif;
 }
 
-/* dark mode 
-body {
+.dark-mode {
   color: white;
-  background-color: black;
+  background-color: #282828;
 }
-*/
+
+.dark-mode a:link { color: lightskyblue; }
+.dark-mode a:visited { color: #958b9f; }
+.dark-mode a:hover { color: #952727; }
+.dark-mode a:active { color: #ff4040; text-decoration:none; font-weight:normal; }
 
 .center {
   text-align: center;

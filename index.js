@@ -962,11 +962,9 @@ const textBlockEditor = new TextBlockEditor( {root: 'profile_area', title: 'Kür
  */
 export const setDarkMode = ( DarkMode ) => {
   if ( DarkMode ){
-    document.body.style['color'] = 'white';
-    document.body.style['background-color'] = '#282828';  // almost black
+    document.body.classList.add('dark-mode');
   } else {
-    document.body.style['color'] = 'black';
-    document.body.style['background-color'] = 'white';
+    document.body.classList.remove('dark-mode');
   }
 }
 
