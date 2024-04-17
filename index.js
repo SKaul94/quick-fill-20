@@ -381,7 +381,13 @@ export async function loadAndDecryptArchive( fileName, decrypt = true ){
         // see @link https://stuk.github.io/jszip/documentation/api_zipobject/async.html for async types
         let encryptedPdfData = await zip.files[ singleFileName ].async( 'uint8array' );
         /** {ArrayBuffer} pdfData - decrypted content */
-        const pdfData = decrypt ? await BrowserCrypto.decrypt( encryptedPdfData, password ) : encryptedPdfData;
+        let pdfData;
+        try {
+          pdfData = decrypt ? await BrowserCrypto.decrypt( encryptedPdfData, password ) : encryptedPdfData;
+        } catch (error) {
+          console.error( `${error.name}`, error );
+          alert( 'Falsches Passwort!' );
+        }
         if ( ! pdfData ) break; // wrong password 
         const [ kindOfPDF, language ] = kindOfPDF_language( singleFileName );
         const key = kindOfPDF ? `${kindOfPDF}_${language}` : singleFileName.slice(0,-4);
@@ -482,9 +488,17 @@ const decryptListener = async event => {
   const uint8array = await Idb.get( key );
   const password = li.querySelector('.password')?.value || prompt(`Passwort für die Verschlüsselung von ${key}?`);
   if ( password ){
-    const decryptedData = await BrowserCrypto.decrypt( uint8array, password );
-    Idb.set( key, new Uint8Array( decryptedData ) );
-    alert(`${key} wurde mit "${password}" entschlüsselt.`);
+    let decryptedData;
+    try {
+      decryptedData = await BrowserCrypto.decrypt( uint8array, password );
+    } catch (error) {
+      console.error( `${error.name}`, error );
+      alert( 'Falsches Passwort!' );
+    }
+    if ( decryptedData ){
+      Idb.set( key, new Uint8Array( decryptedData ) );
+      alert(`${key} wurde mit "${password}" entschlüsselt.`);
+    }
   }
   li.querySelector('.password')?.classList.add('hide');
   li.querySelector('.password_visibiliy')?.classList.add('hide');
@@ -718,7 +732,12 @@ profileSelector?.addEventListener('change', async event => {
       decryptedUInt8Array = encryptedUInt8Array;
     } else {
       const individualPassword = prompt(`Individuelles Passwort für ${selectedValue}?`);
-      decryptedUInt8Array = await BrowserCrypto.decrypt( encryptedUInt8Array, individualPassword );
+      try {
+        decryptedUInt8Array = await BrowserCrypto.decrypt( encryptedUInt8Array, individualPassword );
+      } catch (error) {
+        console.error( `${error.name}`, error );
+        alert( 'Falsches Passwort!' );
+      }
     }
     if ( decryptedUInt8Array ){
       const fileContents = new TextDecoder().decode( decryptedUInt8Array );
