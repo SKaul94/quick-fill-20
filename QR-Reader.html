@@ -2,17 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>QR Scanner Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Reader</title>
     <!-- https://github.com/nimiq/qr-scanner --> 
 </head>
 <body>
-<h1>Scan from WebCam:</h1>
+<h1>QR Code Reader from WebCam:</h1>
 <div id="video-container">
     <video id="qr-video"></video>
 </div>
 <div>
     <label>
-        Highlight Style
+        QR Code Highlight Style in Video
         <select id="scan-region-highlight-style-select">
             <option value="default-style">Default style</option>
             <option value="example-style-1">Example custom style 1</option>
@@ -80,7 +81,7 @@
 
     function setResult(label, result) {
         console.log(result.data);
-        label.textContent = result.data;
+        if ( result.data ) label.textContent = result.data;
         camQrResultTimestamp.textContent = new Date().toString();
         label.style.color = 'teal';
         clearTimeout(label.highlightTimeout);
