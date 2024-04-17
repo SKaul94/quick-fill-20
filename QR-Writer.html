@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    textarea {
+      width: 95%;
+      height: fit-content;
+      min-height: 10rem;
+      border: thin solid red;
+      margin: 0.1rem 0.3rem;
+    }
+    #qr_code {
+      width: 95%;
+      height: auto;
+      border: thin solid blue;
+      margin: 0.1rem 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>QR Code Writer</h1>
+  <h2>Input:</h2>
+  <textarea id="input" placeholder="Daten hier eingeben oder hineinkopieren"></textarea>
+  <h2>QR Code</h2>
+  <div id="qr_code">
+    <svg id="qr_svg" width="100%"></svg>
+  </div>
+<script type="module">
+  import * as QR from './lib/lean-qr.js';
+  import * as SVG from './lib/svg.js';
+
+  const textInput = document.getElementById('input');
+  const svgElement = document.getElementById('qr_svg');
+
+  textInput.addEventListener('input', event => {
+    qrCodeSvg( svgElement, textInput.value );
+  });
+
+  function qrCodeSvg( svgElement, content ){
+    content ||= this.contentSum();
+    // https://qr.davidje13.com/docs/#generate
+    const code = QR.generate( content );
+    // https://qr.davidje13.com/docs/#toSvg
+    SVG.toSvg( code, svgElement, { scale: 10 });
+  }
+</script>  
+</body>
+</html>
