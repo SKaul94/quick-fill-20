@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tagerechner</title>
+  <link rel="stylesheet" href="./lib/styles.css">
 </head>
 <body>
   <h1>Tagerechner: Tage zwischen zwei Daten</h1>
@@ -12,6 +13,9 @@
   <br>Anzahl Tage dazwischen: <span id="result"></span>
   
   <script>
+    const DarkMode = localStorage.getItem('DarkMode') === 'true';
+    if ( DarkMode ) document.body.classList.add('dark-mode');
+
     const first = document.getElementById('first');
     const second = document.getElementById('second');
     const result = document.getElementById('result');
