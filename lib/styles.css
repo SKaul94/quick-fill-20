@@ -514,6 +514,15 @@ a:hover {
   cursor: pointer;
 }
 
+#home {
+  margin-right: 1rem;
+  cursor: pointer;
+}
+#home > svg {
+  width: 2rem;
+  height: 2rem;
+}
+
 @media print {
   .pagebreak { page-break-before: always; } /* page-break-after works, as well */
 }
