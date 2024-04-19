@@ -949,6 +949,7 @@ export async function addSinglePDF( params ){
   const pdfBinary = new Uint8Array( await pdfFile.arrayBuffer() );
   const [ kindOfPDF, language ] = kindOfPDF_language( pdfFile.name );
   const key = `${kindOfPDF}_${language}`;
+  pdfDoc.key = key;
 
   // store binary in IndexedDB:
   Idb.set( key, pdfBinary );
