@@ -25,6 +25,9 @@ import {XMLInterpreter} from "./lib/XMLInterpreter.js";
 import * as Idb from './lib/idb-keyval.js';
 import * as BrowserCrypto from './lib/crypto.js';
 import {JSZip} from './lib/jszip.js';
+import QrScanner from "./lib/qr-scanner.min.js";
+import {Person} from './lib/Person.js';
+import {PersonEditor} from './lib/PersonEditor.js';
 // Material Design
 // import * as MWC from './lib/mwc.min.js';
 
@@ -179,6 +182,7 @@ firstElementWithClass('save_all')?.addEventListener('click', PdfDoc.saveAllListe
 firstElementWithClass('print_all')?.addEventListener('click', PdfDoc.printAllListener );
 document.querySelector('.open_import_xml_clipboard.app')?.addEventListener('click', xmlHandler(true) );
 firstElementWithClass('open_import_xml_file')?.addEventListener('click', xmlHandler(false) );
+firstElementWithClass('import_QR_fill_pdf')?.addEventListener('click', import_QR_fill_pdf );
 
 firstElementWithClass('load_pdf_asyl')?.addEventListener('click', pdfLoader('asyl') );
 firstElementWithClass('load_pdf_minder')?.addEventListener('click',  pdfLoader('minder') );
@@ -688,6 +692,73 @@ firstElementWithClass('delete_pdfs').addEventListener('click', async event => {
     setAllLanguageSelectors();
     event.target.parentElement.parentElement.nextElementSibling.innerHTML = '<li class="null_item">Keine. (Bitte zuerst PDFs laden!)</li>';
   }
+});
+
+let qrScanner;
+
+function import_QR_fill_pdf( event ){
+  const videoContainer = document.getElementById('qr-video-container');
+  const qrVideo = document.getElementById('qr-video');
+  const qrErrorMessage = document.getElementById('qr-error-message');
+  if ( videoContainer.classList.contains('hide') ){
+    videoContainer.classList.remove('hide');
+    qrScanner = new QrScanner( qrVideo, result => createPdfFromCollectedData( result ), {
+      onDecodeError: error => {
+          qrErrorMessage.innerText = `Bitte Kamera auf den QR-Code richten! ${error}`;
+      },
+      // maxScansPerSecond: 5,
+      highlightScanRegion: true,
+      highlightCodeOutline: true,
+    });
+    qrScanner.start();
+  } else {
+    qrScanner?.stop();
+    videoContainer.classList.add('hide');
+  } 
+}
+
+// let qrDataPool = [];
+
+// function collectData( result ){
+//   qrDataPool.push( result );
+//   setTimeout( qrScanner.stop, 200 );
+//   setTimeout( createPdfFromCollectedData, 250 );
+// }
+
+async function createPdfFromCollectedData( result ){
+  qrScanner.stop();
+  document.getElementById('qr-video-container').classList.add('hide');
+  // const MAX = Math.max( qrDataPool.map( res => res.data.length ) );
+  const bestResult = result; // qrDataPool.find( res => res.data.length === MAX );
+  const data = Object.fromEntries( bestResult.data.split('|').map( f => f.split('=') ) );
+  document.getElementById('qr-error-message').innerText = `QR-Code gefunden!`;
+  const person = Person.getPersonFromName( data.name );
+  const ruleTable = document.querySelector('.app table.rule_table');
+  for ( const [ rule, value ] of Object.entries( data ) ){
+    if ( rule === 'PDF' ) continue;
+    Rule.createNew({ rule, value, person });
+  }
+  const root = ruleTable.parentElement;
+  root.innerHTML = '';
+  const title = `Eingelesene Daten von ${data.name}`;
+  const personEditor = new PersonEditor({person, root, title, plus_row: true});
+  personEditor.rules_area = root;
+  personEditor.render();
+
+  const keyOrFilename = data.PDF;
+  const pdfBinary = await Idb.match( keyOrFilename );
+  const newPdfDoc = new PdfDoc( {name: keyOrFilename}, null, person );
+  await newPdfDoc.renderArrayBuffer( pdfBinary );
+  // qrDataPool = [];
+  return newPdfDoc;
+}
+
+document.getElementById('qr-start-button').addEventListener('click', event => {
+  qrScanner.start();
+});
+
+document.getElementById('qr-stop-button').addEventListener('click', event => {
+  qrScanner.stop();
 });
 
 export const configResetHandler = async event => {

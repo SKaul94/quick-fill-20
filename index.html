@@ -69,6 +69,13 @@
 <button class="file_chooser app hide" title="Einzelnes PDF öffnen" data-remember="PDF">Füge PDF hinzu</button>
 <button class="open_import_xml_clipboard app hide" title="XML aus Pufferspeicher einfügen">Copy XML</button>
 <button class="open_import_xml_file app hide" title="XML aus Datei einfügen" data-remember="XML">XML Datei</button>
+<button class="import_QR_fill_pdf app hide" title="QR scannen und mit Daten PDF füllen" data-remember="XML">QR</button>
+<div id="qr-video-container" class="hide">
+  <span id="qr-error-message">Bitte Kamera auf den QR-Code richten!</span>
+  <button id="qr-start-button" class="clickable">Start</button>
+  <button id="qr-stop-button" class="clickable">Stop</button>
+  <video id="qr-video"></video>
+</div>
 <!-- 
 <button class="load_pdf_asyl xml" title="PDF für Asylantrag für Erwachsene laden" data-remember="asyl">Erwachsen</button>
 <button class="load_pdf_minder xml" title="PDF für Asylantrag für Minderjährige laden" data-remember="minder">Minderjährig</button>
