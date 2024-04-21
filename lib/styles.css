@@ -48,6 +48,35 @@ object, iframe {
 .resizer { display:flex; margin:0; padding:0; resize:both; overflow: hidden; }
 .resizer > .resized { flex-grow:1; margin:0; padding:0; border:0; max-height: 70vh;  overflow: auto; }
 
+span.icon.small {
+  padding: 3px;
+  border: thin solid transparent;
+}
+
+span.icon.noborder {
+  border: thin solid transparent;
+}
+
+span.icon.top {
+  padding: 6px 6px 1px 6px;
+}
+
+span.icon {
+  border: thin solid whitesmoke;
+  border-radius: 12px;
+  padding: 6px 3px 1px 6px;
+  margin: 3px;
+}
+
+span.icon:hover {
+  background-color: #555555;
+}
+
+span.icon:active, span.icon:active > svg {
+  border-color: blue;
+  background-color: deepskyblue;
+  transform: translateY(4px);
+}
 
 .hide {
   display: none;

@@ -10,7 +10,7 @@
 /*************  imports ***************/
 
 import {config} from './lib/config.js';
-import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG, personPlusSVG, keyPlusSVG, keyMinusSVG, uploadSVG, downloadSVG} from './lib/global_functions.js';
+import {firstElementWithClass, elementWithID, jsonStringifyWithFunctions, jsonParseWithFunctions, filename_language_mapper, mergeObjects, trashWhiteIconSVG, personPlusSVG, keyPlusSVG, keyMinusSVG, uploadSVG, downloadSVG, shareSVG} from './lib/global_functions.js';
 import {fileOpen, fileSave, directoryOpen} from './lib/FileOpener.js'; // './node_modules/browser-fs-access/dist/esm/index.js';
 // import {PDFDocument, StandardFonts} from "./node_modules/pdf-lib/dist/pdf-lib.esm.js"; // replaced by Mozilla PDF.js
 import {Rule} from './lib/Rule.js';
@@ -76,7 +76,7 @@ if ( config.debug ) Object.prototype.allPropFun = function(){
 }
 
 /* *  ***********  add SVG icon to both, app and profile  ************* * */
-for ( const button of document.querySelectorAll('button.keyboard') ){
+for ( const button of document.querySelectorAll('span.keyboard') ){
   const svg = document.querySelector('svg.keyboard-svg').cloneNode( true );
   svg.classList.remove('hide');
   button.innerHTML = svg.outerHTML;
@@ -408,6 +408,29 @@ export async function loadAndDecryptArchive( fileName, decrypt = true ){
   }
 };
 
+document.getElementById('share_xml').addEventListener('click', async event => {
+  const file = new File([ await navigator.clipboard.readText() ], 'clipboard.xml', {
+    type: "text/xml",
+  }); 
+  const files = [ file ];
+  //validates the files
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({
+        files,
+        title: "QuickFill XML file",
+        text: key,
+        url: ''
+      });
+      alert( "Shared successfully!" );
+    } catch (error) {
+      alert( error.message );
+    }
+  } else {
+    alert( `Your system doesn't support sharing these files.` );
+  }
+});
+
 firstElementWithClass('interprete_xml_file')?.addEventListener('click',
   interpretXMLListener( async interpreter =>  interpreter.interpretFile(), 
   `file selection cancelled or error in selected file` ) );
@@ -426,8 +449,8 @@ function interpretXMLListener( interpreterCallback, errorMessage ){
     try {
       await interpreterCallback( interpreter );
     } catch ( error ) {
-      console.error( `${error.name}`, error );
-      if ( error.name !== 'AbortError' ) alert( `Fehler in XML` ); 
+      console.assert( error.name === 'AbortError', error.name, error );
+      if ( error.name !== 'AbortError' ){ alert( `Fehler in XML` ); } 
     } finally {
       event.target.removeAttribute('disabled');
       if ( ! interpreter.stop ) cancelButton?.removeEventListener( 'click', myCancelEventListener );
@@ -518,19 +541,20 @@ function managePdfList( key, pdfFile ){
   const li = document.createElement('li');
   li.dataset.key = key;
   const suffix = key.match(/profil/i) ? '.txt' : '.pdf';
-  li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} <span class="spacy_width" title="Löschen">${trashWhiteIconSVG}</span>`;
+  li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} `;
   li.innerHTML += `
-    <span class="spacy_width" title="von lokaler Platte laden">${uploadSVG}</span>
-    <span class="spacy_width" title="auf lokale Platte speichern">${downloadSVG}</span>
-    <span class="spacy_width" title="mit Passwort verschlüsseln">${keyPlusSVG}</span>
-    <span class="spacy_width" title="mit Passwort entschlüsseln">${keyMinusSVG}</span>
+    <span class="spacy_width icon small" title="Löschen">${trashWhiteIconSVG}</span>
+    <span class="spacy_width icon small" title="auf lokale Platte speichern">${downloadSVG}</span>
+    <span class="spacy_width icon small" title="Datei mit anderen teilen (share)">${shareSVG}</span>
+    <span class="spacy_width icon small" title="mit Passwort verschlüsseln">${keyPlusSVG}</span>
+    <span class="spacy_width icon small" title="mit Passwort entschlüsseln">${keyMinusSVG}</span>
     <input type="password" class="password spacy_width hide" placeholder="Passwort" title="Individuelles Passwort festlegen">
     <input type="checkbox" class="password_visibiliy hide" title="Passwort sichtbar machen">
     <button class="encrypt hide">encrypt</button>
     <button class="decrypt hide">decrypt</button>`;
-  if (key.match(/profil/i)) li.innerHTML += `<span class="spacy_width" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>`;  
+  if (key.match(/profil/i)) li.innerHTML += `<span class="spacy_width icon small" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>`;  
   
-  const [trashIcon, uploadIcon, downloadIcon, keyPlusIcon, keyMinusIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
+  const [trashIcon, downloadIcon, shareIcon, keyPlusIcon, keyMinusIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
 
   const passwordVisibility = li.querySelector('input.password_visibiliy');
   const encryptButton = li.querySelector('button.encrypt');
@@ -556,44 +580,47 @@ function managePdfList( key, pdfFile ){
       mergeConfigAndReload( fileContents );
     }
   });
-  uploadIcon?.addEventListener('click', async event => {
-    const fileHandle = await fileOpen( {
-        // List of allowed MIME types, defaults to `*/*`.
-        mimeTypes: ['text/plain', 'application/pdf'],
-        // List of allowed file extensions (with leading '.'), defaults to `''`.
-        extensions: [ suffix ],
-        // Set to `true` for allowing multiple files, defaults to `false`.
-        multiple: false,
-        // Textual description for file dialog , defaults to `''`.
-        description: `Lade ${key}${suffix} von der lokalen Platte`,
-        // Suggested directory in which the file picker opens. A well-known directory or a file handle.
-        startIn: 'downloads',
-        // By specifying an ID, the user agent can remember different directories for different IDs.
-        id: 'downloads',
-        // Include an option to not apply any filter in the file picker, defaults to `false`.
-        excludeAcceptAllOption: false,
-    } );
-    const file = fileHandle instanceof File ? fileHandle : await fileHandle.getFile();
-    const binaryContents = await file.arrayBuffer();
-    Idb.set( key, new Uint8Array( binaryContents ) );
-    li.remove();
-    managePdfList( key, file );
-  });
   downloadIcon?.addEventListener('click', async event => {
     const uint8array = await Idb.get( key );
-      const blob = new Blob([uint8array], {type: "binary/octet-stream"});
-      fileSave( blob, {
-        // Suggested file name to use, defaults to `''`.
-        fileName: `${key}${suffix}`,
-        // Suggested file extensions (with leading '.'), defaults to `''`.
-        extensions: [ suffix ],
-        // Suggested directory in which the file picker opens. A well-known directory or a file handle.
-        startIn: 'downloads',
-        // By specifying an ID, the user agent can remember different directories for different IDs.
-        id: 'downloads',
-        // Include an option to not apply any filter in the file picker, defaults to `false`.
-        excludeAcceptAllOption: false,
-      });
+    const blob = new Blob([uint8array], {type: "binary/octet-stream"});
+    fileSave( blob, {
+      // Suggested file name to use, defaults to `''`.
+      fileName: `${key}${suffix}`,
+      // Suggested file extensions (with leading '.'), defaults to `''`.
+      extensions: [ suffix ],
+      // Suggested directory in which the file picker opens. A well-known directory or a file handle.
+      startIn: 'downloads',
+      // By specifying an ID, the user agent can remember different directories for different IDs.
+      id: 'downloads',
+      // Include an option to not apply any filter in the file picker, defaults to `false`.
+      excludeAcceptAllOption: false,
+    });
+  });
+  shareIcon?.addEventListener('click', async event => {
+    const uint8array = await Idb.get( key );
+    const blob = new Blob([uint8array], {type: "binary/octet-stream"});
+    // Create a File from the Blob with a desired file name and MIME type
+    const filename = `${key}.pdf`;
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    const files = [ file ];
+    let shareData = {
+      files,
+      title: "QuickFill file",
+      text: filename,
+      url: ''
+    };
+    //validates the files
+    if (navigator.canShare && navigator.canShare( shareData )) {
+      try {
+        await navigator.share( shareData );
+        alert( "Shared successfully!" );
+      } catch (error) {
+        console.error( error.name, error )
+        alert( error.message );
+      }
+    } else {
+      alert( `Your system doesn't support sharing these files.` );
+    }
   });
   keyPlusIcon?.addEventListener('click', async event => {
     li.querySelector('.password')?.classList.remove('hide');
@@ -608,6 +635,58 @@ function managePdfList( key, pdfFile ){
   firstElementWithClass('loaded_pdfs')?.appendChild(li);
   firstElementWithClass('null_item')?.remove();
 }
+
+document.getElementById('share_profile')?.addEventListener('click', async event => {
+  ProfileEditor.updateConfig({});
+  const initialRulesList = config.initialRulesList;
+  const json = JSON.stringify( { initialRulesList }, null, 2 );
+  const blob = new Blob([json], {type: "text/plain"});
+  // Create a File from the Blob with a desired file name and MIME type
+  const file = new File([blob], 'profil.txt', { type: 'text/plain' });
+  const files = [ file ];
+  //validates the files
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({
+        files,
+        title: "QuickFill Profil",
+        text: 'profil.txt',
+        url: ''
+      });
+      alert( "Shared successfully!" );
+    } catch (error) {
+      alert( error.message );
+    }
+  } else {
+    alert( `Your system doesn't support sharing these files.` );
+  }
+});
+
+document.getElementById('share_all_files')?.addEventListener('click', async event => {
+  const files = [];
+  for ( const [ key, uint8array ] of await Idb.entries() ){
+    const blob = new Blob([uint8array]);
+    // Create a File from the Blob with a desired file name and MIME type
+    const file = new File([blob], key, { type: 'text/plain' });
+    files.push( file );
+  }
+  //validates the files
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({
+        files,
+        title: "QuickFill Formulare",
+        text: 'alle QuickFill Formulare',
+        url: ''
+      });
+      alert( "Shared successfully!" );
+    } catch (error) {
+      alert( error.message );
+    }
+  } else {
+    alert( `Your system doesn't support sharing these files.` );
+  }
+});
 
 function pdfAllLoader(){
   return async event => {
@@ -754,11 +833,13 @@ async function createPdfFromCollectedData( result ){
 }
 
 document.getElementById('qr-start-button').addEventListener('click', event => {
+  document.getElementById('qr-video').classList.remove('hide');
   qrScanner.start();
 });
 
 document.getElementById('qr-stop-button').addEventListener('click', event => {
   qrScanner.stop();
+  document.getElementById('qr-video').classList.add('hide');
 });
 
 export const configResetHandler = async event => {
@@ -1313,9 +1394,9 @@ export function importXML( textArea ){
   let xmlDOM;
   try {
     xmlDOM = new DOMParser().parseFromString(textArea.value, 'application/xml');
-  } catch (e) {
-    console.error(e);
-    if ( e.name !== 'AbortError' ) alert( `Fehler in XML` );
+  } catch (error) {
+    console.assert( error.name === 'AbortError', error.name, error );
+    if ( error.name !== 'AbortError' ) alert( `Fehler in XML` );
     xmlDOM = null;
   }
 

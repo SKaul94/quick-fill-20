@@ -1,12 +1,12 @@
 .DS_Store
-settings.json
+.vscode
+.vscode/launch.json
+.vscode/settings.json
 node_modules
 bundle.js
 bundle.js.map
 *.pdf
 LICENSE
-.vscode
-
 web/locale/ach/viewer.ftl
 web/locale/af/viewer.ftl
 web/locale/an/viewer.ftl
