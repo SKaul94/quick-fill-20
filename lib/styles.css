@@ -58,13 +58,13 @@ span.icon.noborder {
 }
 
 span.icon.top {
-  padding: 6px 6px 1px 6px;
+  padding: 6px 8px 0px 6px;
 }
 
 span.icon {
   border: thin solid whitesmoke;
   border-radius: 12px;
-  padding: 6px 3px 1px 6px;
+  padding: 5px 6px 0px 6px;
   margin: 3px;
 }
 
@@ -126,6 +126,10 @@ span.icon:active, span.icon:active > svg {
 .printed_page {
   width: 100%;
   height: auto;
+}
+
+.hidden > img.printed_page {
+  display: none;
 }
 
 .qr_code {
