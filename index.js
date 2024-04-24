@@ -543,16 +543,16 @@ function managePdfList( key, pdfFile ){
   const suffix = key.match(/profil/i) ? '.txt' : '.pdf';
   li.innerHTML = `${pdfFile ? pdfFile.name + ' => ' : ''} ${key} `;
   li.innerHTML += `
-    <span class="spacy_width icon small" title="Löschen">${trashWhiteIconSVG}</span>
-    <span class="spacy_width icon small" title="auf lokale Platte speichern">${downloadSVG}</span>
-    <span class="spacy_width icon small" title="Datei mit anderen teilen (share)">${shareSVG}</span>
-    <span class="spacy_width icon small" title="mit Passwort verschlüsseln">${keyPlusSVG}</span>
-    <span class="spacy_width icon small" title="mit Passwort entschlüsseln">${keyMinusSVG}</span>
+    <span class="spacy_width icon small clickable" title="Löschen">${trashWhiteIconSVG}</span>
+    <span class="spacy_width icon small clickable" title="auf lokale Platte speichern">${downloadSVG}</span>
+    <span class="spacy_width icon small clickable" title="Datei mit anderen teilen (share)">${shareSVG}</span>
+    <span class="spacy_width icon small clickable" title="mit Passwort verschlüsseln">${keyPlusSVG}</span>
+    <span class="spacy_width icon small clickable" title="mit Passwort entschlüsseln">${keyMinusSVG}</span>
     <input type="password" class="password spacy_width hide" placeholder="Passwort" title="Individuelles Passwort festlegen">
     <input type="checkbox" class="password_visibiliy hide" title="Passwort sichtbar machen">
     <button class="encrypt hide">encrypt</button>
     <button class="decrypt hide">decrypt</button>`;
-  if (key.match(/profil/i)) li.innerHTML += `<span class="spacy_width icon small" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>`;  
+  if (key.match(/profil/i)) li.innerHTML += `<span class="spacy_width icon small clickable" title="Profil zur Konfiguration hinzu laden">${personPlusSVG}</span>`;  
   
   const [trashIcon, downloadIcon, shareIcon, keyPlusIcon, keyMinusIcon, configIcon] = Array.from(li.querySelectorAll('svg'));
 
