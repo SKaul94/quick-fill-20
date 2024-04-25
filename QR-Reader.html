@@ -78,12 +78,12 @@
     if ( DarkMode ) document.body.classList.add('dark-mode');
 
     const home =  document.getElementById('home');
-    home.addEventListener('click', event => {
+    home?.addEventListener('click', event => {
       window.location.assign("./index.html");
     });
 
     const reload =  document.getElementById('reload');
-    reload.addEventListener('click', event => {
+    reload?.addEventListener('click', event => {
       window.location.reload(true);
     });
 
