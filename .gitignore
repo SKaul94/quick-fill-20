@@ -3,6 +3,7 @@
 .vscode/launch.json
 .vscode/settings.json
 node_modules
+tmp
 bundle.js
 bundle.js.map
 *.pdf
